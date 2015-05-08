@@ -10,7 +10,7 @@ Get 和 Scan 实例都可以用 `setFilter(Filter filter)` 配置。
 - hbase-0.94.6-cdh4.3.0-security.jar
 - 过滤器所属包：org.apache.hadoop.hbase.filter
 
-## CompareOp 字节(Binary)比较类型
+## CompareOp 比较类型
 
 下面有用到比较类型的均来自下面的七种之一。
 
@@ -27,7 +27,7 @@ Get 和 Scan 实例都可以用 `setFilter(Filter filter)` 配置。
 	// 小于等于"rowId"的行
 	Filter filter = new RowFilter(CompareOp.LESS_OR_EQUAL, new BinaryComparator(Bytes.toBytes("rowId")));
 
-## BitwiseOp 位(bit)比较类型
+## BitwiseOp 比较类型
 
 位比较类型，与，或，异或
 
