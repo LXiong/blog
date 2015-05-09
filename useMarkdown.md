@@ -58,6 +58,10 @@ http://images.google.com/images?num=30&q=larry+bird
 
 http://images.google.com/images?num=30&amp;q=larry+bird
 
+<a href="http://images.google.com/images?num=30&q=larry+bird">test1</a>
+
+<a href="http://images.google.com/images?num=30&amp;q=larry+bird">test2</a>
+
 Markdown 让你可以自然地书写字符，需要转换的由它来处理好了。如果你使用的 `&` 字符是 HTML 字符实体的一部分，它会保留原状，否则它会被转换成 `&amp`;。
 
 所以你如果要在文档中插入一个版权符号 `©`，你可以这样写：
