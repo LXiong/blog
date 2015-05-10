@@ -451,7 +451,7 @@ sit amet, consectetuer adipiscing elit.
 
 *   一列表项包含一个列表区块：
 
-		<代码写在这>
+		我是代码
 
 
 当然，项目列表很可能会不小心产生，像是下面这样的写法：
@@ -833,7 +833,7 @@ Markdown 使用一种和链接很相似的语法来标记图片，同样也允�
 Markdown 支持以比较简短的自动链接形式来处理网址和电子邮件信箱，只要是用方括号包起来， Markdown 就会自动把它转成链接。一般网址的链接文字就和链接地址一样，例如：
 
     <http://example.com/>
-	# 有些markdown编译器会认为带http://的是链接，如github
+	# Github会自动处理URLs
 	http://example.com/
 
 效果：
@@ -963,6 +963,7 @@ Mac 平台
 
 在标准的语法中：
 
+	normal _greate_ normal
 	wow_great_stuff
 	do_this_and_do_that_and_another_thing.
 
@@ -970,20 +971,23 @@ Mac 平台
 
 会是这样：
 
+normal _greate_ normal  
 wow*great*stuff  
 do*this*and*do*that*and*another\_thing.
 
 等价于：
 
+	normal *greate* normal
 	wow*great*stuff  
 	do*this*and*do*that*and*another\_thing.
 
-Github 中会忽略 `_` 以保证单词的正确输出。
+Github 中会忽略一个单词之间的 `_` 以保证单词的正确输出。
 
 在Github中，显示：
 
-wow\_great\_stuff  
-do\_this\_and\_do\_that\_and\_another\_thing.
+normal _greate_ normal  
+wow_great_stuff  
+do_this_and_do_that_and_another_thing.  
 
 ### URL autolinking
 
@@ -1001,9 +1005,9 @@ do\_this\_and\_do\_that\_and\_another\_thing.
 
 	~~Mistaken text.~~
 
-会是这样：
-
-<del>Mistaken text.</del>
+Github中显示：
+ 
+~~Mistaken text.~~
 
 ### Fenced code blocks
 
@@ -1039,10 +1043,10 @@ Github对Table提供语法支持，标准的语法没有Table，只能写 `<tabl
 
 表头行与表体行之间用 `-` 分隔，列与列之间用 `|` 分隔。
 
-	First Header  | Second Header
-	------------- | -------------
-	Content Cell  | Content Cell
-	Content Cell  | Content Cell
+		First Header  | Second Header
+		------------- | -------------
+		Content Cell  | Content Cell
+		Content Cell  | Content Cell
 
 首尾加 `|` 也可以，如果你不嫌麻烦的话。
 
@@ -1097,14 +1101,12 @@ Github 中直接换行就可以了
 
 Github 提供了 Todo 样式。
 
-	- [x] @mentions, #refs, [links](), **formatting**, and <del>tags</del> are supported
 	- [x] list syntax is required (any unordered or ordered list supported)
 	- [x] this is a complete item
 	- [ ] this is an incomplete item
 
 Github 中样式：
 
-- [x] @mentions, #refs, [links](), **formatting**, and <del>tags</del> are supported
 - [x] list syntax is required (any unordered or ordered list supported)
 - [x] this is a complete item
 - [ ] this is an incomplete item
@@ -1114,7 +1116,6 @@ Github 中样式：
 	- [ ] a bigger project
 	  - [ ] first subtask #1234
 	  - [ ] follow up subtask #4321
-	  - [ ] final subtask cc @mention
 	- [ ] a separate task
 
 Github 中样式：
@@ -1122,42 +1123,7 @@ Github 中样式：
 - [ ] a bigger project
   - [ ] first subtask #1234
   - [ ] follow up subtask #4321
-  - [ ] final subtask cc @mention
 - [ ] a separate task
-
-### References
-
-一些引用会自动链接
-
-	* SHA: a5c3785ed8d6a35868bc169f07e40e889087fd2e
-	* User@SHA: jlord@a5c3785ed8d6a35868bc169f07e40e889087fd2e
-	* User/Repository@SHA: jlord/sheetsee.js@a5c3785ed8d6a35868bc169f07e40e889087fd2e
-	* #Num: #26
-	* GH-Num: GH-26
-	* User#Num: jlord#26
-	* User/Repository#Num: jlord/sheetsee.js#26
-
-Github 中样式：
-
-* SHA: a5c3785ed8d6a35868bc169f07e40e889087fd2e
-* User@SHA: jlord@a5c3785ed8d6a35868bc169f07e40e889087fd2e
-* User/Repository@SHA: jlord/sheetsee.js@a5c3785ed8d6a35868bc169f07e40e889087fd2e
-* #Num: #26
-* GH-Num: GH-26
-* User#Num: jlord#26
-* User/Repository#Num: jlord/sheetsee.js#26
-
-### Name and Team @mentions autocomplete
-
-可以直接使用 `@username` , `@organization/team-name` 进行关联。
-
-Github 中查看：
-
-	@Chinaxiang
-	@Chinacoders
-
-@Chinaxiang  
-@Chinacoders
 
 ### Emoji autocomplete
 
@@ -1165,13 +1131,13 @@ Github 中可以直接插入 Emoji 表情，很给力哟。
 
 在Github 中查看：
 
-	:+1:
-	:-1:
-	:smile: 
+	:+1
+	:-1
+	:smile
 
-:+1:  
-:-1:  
-:smile:
+:+1:
+:-1:
+:smile
 
 ## 参考资料
 
