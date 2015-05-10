@@ -2,6 +2,37 @@
 
 Markdown的语法简洁明了、学习容易，而且功能强大，用它写博客既快速又美观，值得一用。
 
+> 目录
+> 
+> - [概述](https://github.com/Chinaxiang/blog/blob/master/useMarkdown.md#%E6%A6%82%E8%BF%B0 "概述")
+>     - [宗旨](https://github.com/Chinaxiang/blog/blob/master/useMarkdown.md#%E5%AE%97%E6%97%A8 "宗旨")
+>     - [兼容 HTML](https://github.com/Chinaxiang/blog/blob/master/useMarkdown.md#%E5%85%BC%E5%AE%B9-html "兼容 HTML")
+>     - [特殊字符自动转换](https://github.com/Chinaxiang/blog/blob/master/useMarkdown.md#%E7%89%B9%E6%AE%8A%E5%AD%97%E7%AC%A6%E8%87%AA%E5%8A%A8%E8%BD%AC%E6%8D%A2 "特殊字符自动转换")
+> - [区块元素](https://github.com/Chinaxiang/blog/blob/master/useMarkdown.md#%E5%8C%BA%E5%9D%97%E5%85%83%E7%B4%A0 "区块元素")
+>     - [段落和换行](https://github.com/Chinaxiang/blog/blob/master/useMarkdown.md#%E6%AE%B5%E8%90%BD%E5%92%8C%E6%8D%A2%E8%A1%8C "段落和换行")
+>     - [标题](https://github.com/Chinaxiang/blog/blob/master/useMarkdown.md#%E6%A0%87%E9%A2%98 "标题")
+>     - [区块引用](https://github.com/Chinaxiang/blog/blob/master/useMarkdown.md#%E5%8C%BA%E5%9D%97%E5%BC%95%E7%94%A8 "区块引用")
+>     - [列表](https://github.com/Chinaxiang/blog/blob/master/useMarkdown.md#%E5%88%97%E8%A1%A8 "列表")
+>     - [代码区块](https://github.com/Chinaxiang/blog/blob/master/useMarkdown.md#%E4%BB%A3%E7%A0%81%E5%8C%BA%E5%9D%97 "代码区块")
+>     - [分割线](https://github.com/Chinaxiang/blog/blob/master/useMarkdown.md#%E5%88%86%E5%89%B2%E7%BA%BF "分割线")
+> - [区段（行间）元素](https://github.com/Chinaxiang/blog/blob/master/useMarkdown.md#%E5%8C%BA%E6%AE%B5%E8%A1%8C%E9%97%B4%E5%85%83%E7%B4%A0 "区段（行间）元素")
+>     - [链接](https://github.com/Chinaxiang/blog/blob/master/useMarkdown.md#%E9%93%BE%E6%8E%A5 "链接")
+>     - [强调](https://github.com/Chinaxiang/blog/blob/master/useMarkdown.md#%E5%BC%BA%E8%B0%83 "强调")
+>     - [代码](https://github.com/Chinaxiang/blog/blob/master/useMarkdown.md#%E4%BB%A3%E7%A0%81 "代码")
+>     - [图片](https://github.com/Chinaxiang/blog/blob/master/useMarkdown.md#%E5%9B%BE%E7%89%87 "图片")
+> - [其他](https://github.com/Chinaxiang/blog/blob/master/useMarkdown.md#%E5%85%B6%E4%BB%96 "其他")
+>     - [自动链接](https://github.com/Chinaxiang/blog/blob/master/useMarkdown.md#%E8%87%AA%E5%8A%A8%E9%93%BE%E6%8E%A5 "自动链接")
+>     - [反斜杠](https://github.com/Chinaxiang/blog/blob/master/useMarkdown.md#%E5%8F%8D%E6%96%9C%E6%9D%A0 "反斜杠")
+> - [Markdown 编辑器](https://github.com/Chinaxiang/blog/blob/master/useMarkdown.md#markdown%E7%BC%96%E8%BE%91%E5%99%A8 "Markdown 编辑器")
+> - [Github Markdown 扩展语法](https://github.com/Chinaxiang/blog/blob/master/useMarkdown.md#github-markdown-%E6%89%A9%E5%B1%95%E8%AF%AD%E6%B3%95 "Github Markdown 扩展语法")
+>     - [Multiple underscores in words](https://github.com/Chinaxiang/blog/blob/master/useMarkdown.md#multiple-underscores-in-words "Multiple underscores in words")
+>     - [URL autolinking](https://github.com/Chinaxiang/blog/blob/master/useMarkdown.md#url-autolinking "URL autolinking")
+>     - [Strikethrough](https://github.com/Chinaxiang/blog/blob/master/useMarkdown.md#strikethrough "Strikethrough")
+>     - [Fenced code blocks](https://github.com/Chinaxiang/blog/blob/master/useMarkdown.md#fenced-code-blocks "Fenced code blocks")
+>     - [Tables](https://github.com/Chinaxiang/blog/blob/master/useMarkdown.md#tables "Tables")
+>     - [Newlines](https://github.com/Chinaxiang/blog/blob/master/useMarkdown.md#newlines "Newlines")
+>     - [Task lists](https://github.com/Chinaxiang/blog/blob/master/useMarkdown.md#task-lists "Task lists")
+
 ## 概述
 
 ### 宗旨
@@ -1117,7 +1148,7 @@ Github 中样式：
 
 	- [ ] a bigger project
 	  - [ ] first subtask #1234
-	  - [ ] follow up subtask #4321
+	  - [x] follow up subtask #4321
 	- [ ] a separate task
 
 Github 中样式：
