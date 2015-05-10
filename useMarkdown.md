@@ -1043,10 +1043,12 @@ Github对Table提供语法支持，标准的语法没有Table，只能写 `<tabl
 
 表头行与表体行之间用 `-` 分隔，列与列之间用 `|` 分隔。
 
-		First Header  | Second Header
-		------------- | -------------
-		Content Cell  | Content Cell
-		Content Cell  | Content Cell
+```
+First Header  | Second Header
+------------- | -------------
+Content Cell  | Content Cell
+Content Cell  | Content Cell
+```
 
 首尾加 `|` 也可以，如果你不嫌麻烦的话。
 
@@ -1122,22 +1124,8 @@ Github 中样式：
 
 - [ ] a bigger project
   - [ ] first subtask #1234
-  - [ ] follow up subtask #4321
+  - [x] follow up subtask #4321
 - [ ] a separate task
-
-### Emoji autocomplete
-
-Github 中可以直接插入 Emoji 表情，很给力哟。
-
-在Github 中查看：
-
-	:+1
-	:-1
-	:smile
-
-:+1:
-:-1:
-:smile
 
 ## 参考资料
 
