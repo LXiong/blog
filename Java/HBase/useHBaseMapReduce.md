@@ -2,11 +2,22 @@
 
 > 目录
 > 
-> - 读文件到HBase中
-> - 读文件到多个HBase中
-> - 从HBase中读取数据到文件
-> - 从多个HBase中读数据到文件
-> - 参考资料
+> - [概述](https://github.com/Chinaxiang/blog/blob/master/Java/HBase/useHBaseMapReduce.md#%E6%A6%82%E8%BF%B0)
+> - [读文件到HBase中](https://github.com/Chinaxiang/blog/blob/master/Java/HBase/useHBaseMapReduce.md#%E8%AF%BB%E6%96%87%E4%BB%B6%E5%88%B0hbase%E4%B8%AD)
+>     - [准备测试数据](https://github.com/Chinaxiang/blog/blob/master/Java/HBase/useHBaseMapReduce.md#%E5%87%86%E5%A4%87%E6%B5%8B%E8%AF%95%E6%95%B0%E6%8D%AE)
+>     - [HBase表设计](https://github.com/Chinaxiang/blog/blob/master/Java/HBase/useHBaseMapReduce.md#hbase%E8%A1%A8%E8%AE%BE%E8%AE%A1)
+>     - [MapReduce 实例一](https://github.com/Chinaxiang/blog/blob/master/Java/HBase/useHBaseMapReduce.md#mapreduce-%E5%AE%9E%E4%BE%8B%E4%B8%80)
+>     - [MapReduce 实例二](https://github.com/Chinaxiang/blog/blob/master/Java/HBase/useHBaseMapReduce.md#mapreduce-%E5%AE%9E%E4%BE%8B%E4%BA%8C)
+>     - [MapReduce 实例三](https://github.com/Chinaxiang/blog/blob/master/Java/HBase/useHBaseMapReduce.md#mapreduce-%E5%AE%9E%E4%BE%8B%E4%B8%89)
+> - [读文件到多个HBase中](https://github.com/Chinaxiang/blog/blob/master/Java/HBase/useHBaseMapReduce.md#%E8%AF%BB%E6%96%87%E4%BB%B6%E5%88%B0%E5%A4%9A%E4%B8%AAhbase%E4%B8%AD)
+>     - [HBase表设计](https://github.com/Chinaxiang/blog/blob/master/Java/HBase/useHBaseMapReduce.md#hbase%E8%A1%A8%E8%AE%BE%E8%AE%A1-1)
+>     - [MapReduce 实例四](https://github.com/Chinaxiang/blog/blob/master/Java/HBase/useHBaseMapReduce.md#mapreduce-%E5%AE%9E%E4%BE%8B%E5%9B%9B)
+> - [从HBase中读取数据到文件](https://github.com/Chinaxiang/blog/blob/master/Java/HBase/useHBaseMapReduce.md#%E4%BB%8Ehbase%E4%B8%AD%E8%AF%BB%E5%8F%96%E6%95%B0%E6%8D%AE%E5%88%B0%E6%96%87%E4%BB%B6)
+>     - [MapReduce 实例五](https://github.com/Chinaxiang/blog/blob/master/Java/HBase/useHBaseMapReduce.md#mapreduce-%E5%AE%9E%E4%BE%8B%E4%BA%94)
+>     - [MapReduce 实例六](https://github.com/Chinaxiang/blog/blob/master/Java/HBase/useHBaseMapReduce.md#mapreduce-%E5%AE%9E%E4%BE%8B%E5%85%AD)
+> - [从多个HBase中读数据到文件](https://github.com/Chinaxiang/blog/blob/master/Java/HBase/useHBaseMapReduce.md#%E4%BB%8E%E5%A4%9A%E4%B8%AAhbase%E4%B8%AD%E8%AF%BB%E6%95%B0%E6%8D%AE%E5%88%B0%E6%96%87%E4%BB%B6)
+>     - [MapReduce 实例七](https://github.com/Chinaxiang/blog/blob/master/Java/HBase/useHBaseMapReduce.md#mapreduce-%E5%AE%9E%E4%BE%8B%E4%B8%83)
+> - [参考资料](https://github.com/Chinaxiang/blog/blob/master/Java/HBase/useHBaseMapReduce.md#%E5%8F%82%E8%80%83%E8%B5%84%E6%96%99)
 
 环境：
 
@@ -88,107 +99,109 @@ HBase Table和Region的关系，比较类似HDFS File和Block的关系，HBase�
 
 代码示例：
 
-	import java.io.IOException;
-	import java.security.PrivilegedExceptionAction;
-	import java.util.Date;
-	
-	import org.apache.hadoop.conf.Configuration;
-	import org.apache.hadoop.fs.Path;
-	import org.apache.hadoop.hbase.client.Put;
-	import org.apache.hadoop.hbase.mapreduce.TableMapReduceUtil;
-	import org.apache.hadoop.hbase.mapreduce.TableReducer;
-	import org.apache.hadoop.hbase.util.Bytes;
-	import org.apache.hadoop.io.LongWritable;
-	import org.apache.hadoop.io.NullWritable;
-	import org.apache.hadoop.io.Text;
-	import org.apache.hadoop.mapreduce.Job;
-	import org.apache.hadoop.mapreduce.Mapper;
-	import org.apache.hadoop.mapreduce.lib.input.FileInputFormat;
-	import org.apache.hadoop.security.UserGroupInformation;
-	
-	import com.dragon.core.utils.DateUtils;
-	import com.dragon.main.common.utils.HadoopUtils;
-	
-	/**
-	 * @author panda
-	 */
-	public class ReadHDFSToHBase {
-	
-		public static class MapOne extends Mapper<LongWritable, Text, Text, Text> {
-	
-			@Override
-			protected void map(LongWritable key, Text value, Context context) throws IOException, InterruptedException {
-				String[] vals = value.toString().split("\t");
-				if (vals.length == 3) {
-					String name = vals[0];
-					String course = vals[1];
-					String score = vals[2];
-					context.write(new Text(name), new Text(course + "\t" + score));
-				}
-			};
-		}
-	
-		public static class ReduceOne extends TableReducer<Text, Text, NullWritable> {
-	
-			@Override
-			protected void reduce(Text key, Iterable<Text> values, Context context) throws IOException, InterruptedException {
-				String row = key.toString();
-				String family = "courses";
-				byte[] familyB = Bytes.toBytes(family);
-				Put put = new Put(Bytes.toBytes(row));
-				for (Text text : values) {
-					String[] vals = text.toString().split("\t");
-					if (vals.length == 2) {
-						String qualifier = vals[0];
-						String value = vals[1];
-						byte[] qualifierB = Bytes.toBytes(qualifier);
-						byte[] valueB = Bytes.toBytes(value);
-						put.add(familyB, qualifierB, valueB);
-					}
-				}
-				if (!put.isEmpty()) {
-					context.write(NullWritable.get(), put);
-				}
-	
-			};
-	
-		}
-	
-		public static void runJob() throws Exception {
-			Configuration conf = HadoopUtils.getDragonHbaseConfiguration();
-			String input = "/user/panda/input/course.txt";
-			try {
-				Job jobOne = new Job(conf, "Dragon ReadHDFSToHBase Job 1 - " + DateUtils.format2date(new Date(), "yyyy-MM-dd HH:mm:ss"));
-				jobOne.setJarByClass(ReadHDFSToHBase.class);
-				jobOne.setMapperClass(MapOne.class);
-				jobOne.setReducerClass(ReduceOne.class);
-				jobOne.setNumReduceTasks(8);
-				jobOne.setMapOutputKeyClass(Text.class);
-				jobOne.setMapOutputValueClass(Text.class);
-				FileInputFormat.addInputPath(jobOne, new Path(input));
-				TableMapReduceUtil.initTableReducerJob("HB_hyx_school", ReduceOne.class, jobOne);
-				jobOne.waitForCompletion(true);
-			} catch (Exception e) {
-				System.out.println("出现异常了");
-			} finally {
-	
+```java
+import java.io.IOException;
+import java.security.PrivilegedExceptionAction;
+import java.util.Date;
+
+import org.apache.hadoop.conf.Configuration;
+import org.apache.hadoop.fs.Path;
+import org.apache.hadoop.hbase.client.Put;
+import org.apache.hadoop.hbase.mapreduce.TableMapReduceUtil;
+import org.apache.hadoop.hbase.mapreduce.TableReducer;
+import org.apache.hadoop.hbase.util.Bytes;
+import org.apache.hadoop.io.LongWritable;
+import org.apache.hadoop.io.NullWritable;
+import org.apache.hadoop.io.Text;
+import org.apache.hadoop.mapreduce.Job;
+import org.apache.hadoop.mapreduce.Mapper;
+import org.apache.hadoop.mapreduce.lib.input.FileInputFormat;
+import org.apache.hadoop.security.UserGroupInformation;
+
+import com.dragon.core.utils.DateUtils;
+import com.dragon.main.common.utils.HadoopUtils;
+
+/**
+ * @author panda
+ */
+public class ReadHDFSToHBase {
+
+	public static class MapOne extends Mapper<LongWritable, Text, Text, Text> {
+
+		@Override
+		protected void map(LongWritable key, Text value, Context context) throws IOException, InterruptedException {
+			String[] vals = value.toString().split("\t");
+			if (vals.length == 3) {
+				String name = vals[0];
+				String course = vals[1];
+				String score = vals[2];
+				context.write(new Text(name), new Text(course + "\t" + score));
 			}
-	
-		}
-	
-		public static void main(final String[] args) throws IOException, InterruptedException {
-	
-			UserGroupInformation ugi = UserGroupInformation.createRemoteUser("panda");
-			ugi.doAs(new PrivilegedExceptionAction<Void>() {
-				@Override
-				public Void run() throws Exception {
-					runJob();
-					return null;
-				}
-			});
-		}
-	
+		};
 	}
+
+	public static class ReduceOne extends TableReducer<Text, Text, NullWritable> {
+
+		@Override
+		protected void reduce(Text key, Iterable<Text> values, Context context) throws IOException, InterruptedException {
+			String row = key.toString();
+			String family = "courses";
+			byte[] familyB = Bytes.toBytes(family);
+			Put put = new Put(Bytes.toBytes(row));
+			for (Text text : values) {
+				String[] vals = text.toString().split("\t");
+				if (vals.length == 2) {
+					String qualifier = vals[0];
+					String value = vals[1];
+					byte[] qualifierB = Bytes.toBytes(qualifier);
+					byte[] valueB = Bytes.toBytes(value);
+					put.add(familyB, qualifierB, valueB);
+				}
+			}
+			if (!put.isEmpty()) {
+				context.write(NullWritable.get(), put);
+			}
+
+		};
+
+	}
+
+	public static void runJob() throws Exception {
+		Configuration conf = HadoopUtils.getDragonHbaseConfiguration();
+		String input = "/user/panda/input/course.txt";
+		try {
+			Job jobOne = new Job(conf, "Dragon ReadHDFSToHBase Job 1 - " + DateUtils.format2date(new Date(), "yyyy-MM-dd HH:mm:ss"));
+			jobOne.setJarByClass(ReadHDFSToHBase.class);
+			jobOne.setMapperClass(MapOne.class);
+			jobOne.setReducerClass(ReduceOne.class);
+			jobOne.setNumReduceTasks(8);
+			jobOne.setMapOutputKeyClass(Text.class);
+			jobOne.setMapOutputValueClass(Text.class);
+			FileInputFormat.addInputPath(jobOne, new Path(input));
+			TableMapReduceUtil.initTableReducerJob("HB_hyx_school", ReduceOne.class, jobOne);
+			jobOne.waitForCompletion(true);
+		} catch (Exception e) {
+			System.out.println("出现异常了");
+		} finally {
+
+		}
+
+	}
+
+	public static void main(final String[] args) throws IOException, InterruptedException {
+
+		UserGroupInformation ugi = UserGroupInformation.createRemoteUser("panda");
+		ugi.doAs(new PrivilegedExceptionAction<Void>() {
+			@Override
+			public Void run() throws Exception {
+				runJob();
+				return null;
+			}
+		});
+	}
+
+}
+```
 
 运行结果：
 
