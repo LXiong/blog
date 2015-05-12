@@ -2,17 +2,17 @@
 
 > 目录
 > 
-> - [相关网站]()
-> - [Axel 安装]()
->     - [源码安装]()
->     - [Ubuntu Axel]()
->     - [Centos Axel]()
-> - [Axel 的使用]()
->     - [命令格式]()
->     - [参数详解]()
->     - [Basic 认证]()
->     - [配置文件]()
-> - [参考资料]()
+> - [相关网站](https://github.com/Chinaxiang/blog/blob/master/Linux/useAxel.md#%E7%9B%B8%E5%85%B3%E7%BD%91%E7%AB%99)
+> - [Axel 安装](https://github.com/Chinaxiang/blog/blob/master/Linux/useAxel.md#axel-%E7%9A%84%E5%AE%89%E8%A3%85)
+>     - [源码安装](https://github.com/Chinaxiang/blog/blob/master/Linux/useAxel.md#%E6%BA%90%E7%A0%81%E5%AE%89%E8%A3%85)
+>     - [Ubuntu Axel](https://github.com/Chinaxiang/blog/blob/master/Linux/useAxel.md#ubuntu-axel)
+>     - [Centos Axel](https://github.com/Chinaxiang/blog/blob/master/Linux/useAxel.md#centos-axel)
+> - [Axel 的使用](https://github.com/Chinaxiang/blog/blob/master/Linux/useAxel.md#axel-%E7%9A%84%E4%BD%BF%E7%94%A8)
+>     - [命令格式](https://github.com/Chinaxiang/blog/blob/master/Linux/useAxel.md#%E5%91%BD%E4%BB%A4%E6%A0%BC%E5%BC%8F)
+>     - [参数详解](https://github.com/Chinaxiang/blog/blob/master/Linux/useAxel.md#%E5%8F%82%E6%95%B0%E8%AF%A6%E8%A7%A3)
+>     - [Basic 认证](https://github.com/Chinaxiang/blog/blob/master/Linux/useAxel.md#basic-%E8%AE%A4%E8%AF%81)
+>     - [配置文件](https://github.com/Chinaxiang/blog/blob/master/Linux/useAxel.md#%E9%85%8D%E7%BD%AE%E6%96%87%E4%BB%B6)
+> - [参考资料](https://github.com/Chinaxiang/blog/blob/master/Linux/useAxel.md#%E5%8F%82%E8%80%83%E8%B5%84%E6%96%99)
 
 Axel 通过打开多个 HTTP/FTP 连接来将一个文件进行分段下载，从而达到加速下载的目的。对于下载大文件，该工具将特别有用。
 
