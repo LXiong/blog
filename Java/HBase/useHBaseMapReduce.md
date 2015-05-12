@@ -5,6 +5,7 @@
 > - 读文件到HBase中
 > - 读文件到多个HBase中
 > - 从HBase中读取数据到文件
+> - 从多个HBase中读数据到文件
 > - 参考资料
 
 环境：
@@ -48,7 +49,7 @@ HBase Table和Region的关系，比较类似HDFS File和Block的关系，HBase�
 - 表名：`HB_hyx_school`  
 - 列族：`courses`
 
-最终想要得到的结果为：
+最终想要得到的结果应该为：
 
 <table>
 <tr>
@@ -83,7 +84,7 @@ HBase Table和Region的关系，比较类似HDFS File和Block的关系，HBase�
 </tr>
 </table>
 
-### MapReduce 实现
+### MapReduce 实例一
 
 代码示例：
 
@@ -204,7 +205,7 @@ ReduceOne 是本例的重点之一，我们采用继承 `TableReducer` 抽象类
 	public abstract class TableReducer<KEYIN,VALUEIN,KEYOUT>
 	extends org.apache.hadoop.mapreduce.Reducer<KEYIN,VALUEIN,KEYOUT,Mutation>
 
-对于使用 `TableReducer` 来说，KEYOUT 没啥用，KEYOUT 一般指表名，而我们的表名已经在JOB中进行定义了，所以此处较随意，有兴趣的话，可以试试此处不为null的情况。
+KEYIN, VALUEIN 对应 MapOne 的输出 Key 和输出 Value, KEYOUT 对于下面要讲到的多表输出有用，此字段是用来指定表名的，对于单表输出的表是在 Job 中指定的，所以此处为 NULL.
 
 向 HBase 插数据当然是输出 Put 对象喽，一个 Put 实例代表一行。
 
@@ -220,7 +221,270 @@ Job 部分核心部分其实就一行：
 
 指定输出到哪个表，使用哪个 Reducer。
 
-至此，我们完成了从HDFS读取文件输出到HBase的操作。
+至此，我们完成了从HDFS读取文件输出到HBase的简单操作。
+
+### MapReduce 实例二
+
+实例一中没有用到 TableOutputFormat 呀？那是因为  `TableMapReduceUtil.initTableReducerJob` 方法替我们完成了所有的配置，实例一中完整的 Job 是这样的：
+
+	// ...
+	jobOne.setNumReduceTasks(1);
+	jobOne.setMapOutputKeyClass(Text.class);
+	jobOne.setMapOutputValueClass(Text.class);
+	// 可以省略的三行
+	jobOne.setOutputKeyClass(NullWritable.class);
+	jobOne.setOutputValueClass(Put.class);
+	jobOne.setOutputFormatClass(TableOutputFormat.class);
+	
+	FileInputFormat.addInputPath(jobOne, new Path(input));
+	TableMapReduceUtil.initTableReducerJob("HB_hyx_school", ReduceOne.class, jobOne);
+	// ...
+
+能省略的，谁愿意写呀，但是本例中是不能省略的哟。
+
+代码如下：
+
+	import java.io.IOException;
+	import java.security.PrivilegedExceptionAction;
+	import java.util.Date;
+	
+	import org.apache.hadoop.conf.Configuration;
+	import org.apache.hadoop.fs.Path;
+	import org.apache.hadoop.hbase.client.Put;
+	import org.apache.hadoop.hbase.mapreduce.TableMapReduceUtil;
+	import org.apache.hadoop.hbase.mapreduce.TableOutputFormat;
+	import org.apache.hadoop.hbase.mapreduce.TableReducer;
+	import org.apache.hadoop.hbase.util.Bytes;
+	import org.apache.hadoop.io.LongWritable;
+	import org.apache.hadoop.io.NullWritable;
+	import org.apache.hadoop.io.Text;
+	import org.apache.hadoop.mapreduce.Job;
+	import org.apache.hadoop.mapreduce.Mapper;
+	import org.apache.hadoop.mapreduce.lib.input.FileInputFormat;
+	import org.apache.hadoop.security.UserGroupInformation;
+	
+	import com.dragon.core.utils.DateUtils;
+	import com.dragon.main.common.utils.HadoopUtils;
+	
+	/**
+	 * @author panda
+	 */
+	public class ReadHDFSToHBase {
+	
+		public static class MapOne extends Mapper<LongWritable, Text, Text, Text> {
+	
+			@Override
+			protected void map(LongWritable key, Text value, Context context) throws IOException, InterruptedException {
+				String[] vals = value.toString().split("\t");
+				if (vals.length == 3) {
+					String name = vals[0];
+					String course = vals[1];
+					String score = vals[2];
+					context.write(new Text(name), new Text(course + "\t" + score));
+				}
+			};
+		}
+		
+		public static class ReduceOne extends TableReducer<Text, Text, NullWritable> {
+	
+			@Override
+			protected void reduce(Text key, Iterable<Text> values, Context context) throws IOException, InterruptedException {
+				String row = key.toString();
+				String family = "courses";
+				byte[] familyB = Bytes.toBytes(family);
+				Put put = new Put(Bytes.toBytes(row));
+				for (Text text : values) {
+					String[] vals = text.toString().split("\t");
+					if (vals.length == 2) {
+						String qualifier = vals[0];
+						String value = vals[1];
+						byte[] qualifierB = Bytes.toBytes(qualifier);
+						byte[] valueB = Bytes.toBytes(value);
+						put.add(familyB, qualifierB, valueB);
+					}
+				}
+				if (!put.isEmpty()) {
+					context.write(NullWritable.get(), put);
+				}
+	
+			};
+	
+		}
+	
+		public static void runJob() throws Exception {
+			Configuration conf = HadoopUtils.getDragonHbaseConfiguration();
+			String input = "/user/panda/input/course.txt";
+			try {
+				// 单独使用 TableOutputFormat 必须在 Job 定义前指定 TableOutputFormat.OUTPUT_TABLE
+				conf.set(TableOutputFormat.OUTPUT_TABLE, "HB_hyx_school");
+				
+				Job jobOne = new Job(conf, "Dragon ReadHDFSToHBase Job 1 - " + DateUtils.format2date(new Date(), "yyyy-MM-dd HH:mm:ss"));
+				jobOne.setJarByClass(ReadHDFSToHBase.class);
+				jobOne.setMapperClass(MapOne.class);
+				jobOne.setReducerClass(ReduceOne.class);
+				jobOne.setNumReduceTasks(1);
+				jobOne.setMapOutputKeyClass(Text.class);
+				jobOne.setMapOutputValueClass(Text.class);
+				// 可以省略的俩行
+				jobOne.setOutputKeyClass(NullWritable.class);
+				jobOne.setOutputValueClass(Put.class);
+				
+				jobOne.setOutputFormatClass(TableOutputFormat.class);
+				FileInputFormat.addInputPath(jobOne, new Path(input));
+				// 普通Job不会自动加载HBase运行环境，需主动添加如下依赖
+				TableMapReduceUtil.addDependencyJars(jobOne);
+				TableMapReduceUtil.addDependencyJars(jobOne.getConfiguration());
+				
+				jobOne.waitForCompletion(true);
+				
+			} catch (Exception e) {
+				System.out.println("出现异常了");
+			} finally {
+	
+			}
+	
+		}
+	
+		public static void main(final String[] args) throws IOException, InterruptedException {
+	
+			UserGroupInformation ugi = UserGroupInformation.createRemoteUser("panda");
+			ugi.doAs(new PrivilegedExceptionAction<Void>() {
+				@Override
+				public Void run() throws Exception {
+					runJob();
+					return null;
+				}
+			});
+		}
+	
+	}
+
+我们在本例中没有使用 `initTableReducerJob` 方法，而是使用了基于配置指定表的方法，具体请看实例中的注释。
+
+### MapReduce 实例三
+
+输出到 HBase 一定要用 TableReducer 吗？答案当然是否定的， TableReducer 也是继承自 Reducer 嘛，使用 Reducer 也是可以的。
+
+代码如下：
+
+	import java.io.IOException;
+	import java.security.PrivilegedExceptionAction;
+	import java.util.Date;
+	
+	import org.apache.hadoop.conf.Configuration;
+	import org.apache.hadoop.fs.Path;
+	import org.apache.hadoop.hbase.client.Put;
+	import org.apache.hadoop.hbase.mapreduce.TableMapReduceUtil;
+	import org.apache.hadoop.hbase.mapreduce.TableOutputFormat;
+	import org.apache.hadoop.hbase.util.Bytes;
+	import org.apache.hadoop.io.LongWritable;
+	import org.apache.hadoop.io.NullWritable;
+	import org.apache.hadoop.io.Text;
+	import org.apache.hadoop.mapreduce.Job;
+	import org.apache.hadoop.mapreduce.Mapper;
+	import org.apache.hadoop.mapreduce.Reducer;
+	import org.apache.hadoop.mapreduce.lib.input.FileInputFormat;
+	import org.apache.hadoop.security.UserGroupInformation;
+	
+	import com.dragon.core.utils.DateUtils;
+	import com.dragon.main.common.utils.HadoopUtils;
+	
+	/**
+	 * @author panda
+	 */
+	public class ReadHDFSToHBase {
+	
+		public static class MapOne extends Mapper<LongWritable, Text, Text, Text> {
+	
+			@Override
+			protected void map(LongWritable key, Text value, Context context) throws IOException, InterruptedException {
+				String[] vals = value.toString().split("\t");
+				if (vals.length == 3) {
+					String name = vals[0];
+					String course = vals[1];
+					String score = vals[2];
+					context.write(new Text(name), new Text(course + "\t" + score));
+				}
+			};
+		}
+		
+		// 仅改动这一行
+		public static class ReduceOne extends Reducer<Text, Text, NullWritable, Put> {
+	//	public static class ReduceOne extends TableReducer<Text, Text, NullWritable> {
+	
+			@Override
+			protected void reduce(Text key, Iterable<Text> values, Context context) throws IOException, InterruptedException {
+				String row = key.toString();
+				String family = "courses";
+				byte[] familyB = Bytes.toBytes(family);
+				Put put = new Put(Bytes.toBytes(row));
+				for (Text text : values) {
+					String[] vals = text.toString().split("\t");
+					if (vals.length == 2) {
+						String qualifier = vals[0];
+						String value = vals[1];
+						byte[] qualifierB = Bytes.toBytes(qualifier);
+						byte[] valueB = Bytes.toBytes(value);
+						put.add(familyB, qualifierB, valueB);
+					}
+				}
+				if (!put.isEmpty()) {
+					context.write(NullWritable.get(), put);
+				}
+	
+			};
+	
+		}
+	
+		public static void runJob() throws Exception {
+			Configuration conf = HadoopUtils.getDragonHbaseConfiguration();
+			String input = "/user/panda/input/course.txt";
+			try {
+				// 单独使用 TableOutputFormat 必须在 Job 定义前指定 TableOutputFormat.OUTPUT_TABLE
+				conf.set(TableOutputFormat.OUTPUT_TABLE, "HB_hyx_school");
+				
+				Job jobOne = new Job(conf, "Dragon ReadHDFSToHBase Job 1 - " + DateUtils.format2date(new Date(), "yyyy-MM-dd HH:mm:ss"));
+				jobOne.setJarByClass(ReadHDFSToHBase.class);
+				jobOne.setMapperClass(MapOne.class);
+				jobOne.setReducerClass(ReduceOne.class);
+				jobOne.setNumReduceTasks(1);
+				jobOne.setMapOutputKeyClass(Text.class);
+				jobOne.setMapOutputValueClass(Text.class);
+				// 可以省略的俩行
+				jobOne.setOutputKeyClass(NullWritable.class);
+				jobOne.setOutputValueClass(Put.class);
+				
+				jobOne.setOutputFormatClass(TableOutputFormat.class);
+				FileInputFormat.addInputPath(jobOne, new Path(input));
+				// 普通Job不会自动加载HBase运行环境，需主动添加如下依赖
+				TableMapReduceUtil.addDependencyJars(jobOne);
+				TableMapReduceUtil.addDependencyJars(jobOne.getConfiguration());
+				
+				jobOne.waitForCompletion(true);
+				
+			} catch (Exception e) {
+				System.out.println("出现异常了");
+			} finally {
+	
+			}
+	
+		}
+	
+		public static void main(final String[] args) throws IOException, InterruptedException {
+	
+			UserGroupInformation ugi = UserGroupInformation.createRemoteUser("panda");
+			ugi.doAs(new PrivilegedExceptionAction<Void>() {
+				@Override
+				public Void run() throws Exception {
+					runJob();
+					return null;
+				}
+			});
+		}
+	
+	}
+
+改动就一行，就是如此简单，不过值得注意的是，使用 Reducer 时 Job 中不能使用 `initTableReducerJob` 快速配置了，因为此方法需要 `TableReducer` 类作为参数。
 
 ## 读文件到多个HBase中
 
@@ -245,7 +509,7 @@ Job 部分核心部分其实就一行：
 
 我们要获得的结果你应该可以猜到了。
 
-### MapReduce 实现
+### MapReduce 实例四
 
 代码如下：
 
@@ -259,12 +523,12 @@ Job 部分核心部分其实就一行：
 	import org.apache.hadoop.hbase.io.ImmutableBytesWritable;
 	import org.apache.hadoop.hbase.mapreduce.MultiTableOutputFormat;
 	import org.apache.hadoop.hbase.mapreduce.TableMapReduceUtil;
+	import org.apache.hadoop.hbase.mapreduce.TableReducer;
 	import org.apache.hadoop.hbase.util.Bytes;
 	import org.apache.hadoop.io.LongWritable;
 	import org.apache.hadoop.io.Text;
 	import org.apache.hadoop.mapreduce.Job;
 	import org.apache.hadoop.mapreduce.Mapper;
-	import org.apache.hadoop.mapreduce.Reducer;
 	import org.apache.hadoop.mapreduce.lib.input.FileInputFormat;
 	import org.apache.hadoop.security.UserGroupInformation;
 	
@@ -290,7 +554,7 @@ Job 部分核心部分其实就一行：
 			};
 		}
 	
-		public static class ReduceOne extends Reducer<Text, Text, ImmutableBytesWritable, Put> {
+		public static class ReduceOne extends TableReducer<Text, Text, ImmutableBytesWritable> {
 	
 			@Override
 			protected void reduce(Text key, Iterable<Text> values, Context context) throws IOException, InterruptedException {
@@ -298,13 +562,13 @@ Job 部分核心部分其实就一行：
 				if (arr.length == 2) {
 					String row = arr[0];
 					String course = arr[1];
+					// 指定表名
 					String tableName = "HB_hyx_" + course;
 					ImmutableBytesWritable table = new ImmutableBytesWritable(Bytes.toBytes(tableName));
 					byte[] familyB = Bytes.toBytes("score");
 					Put put = new Put(Bytes.toBytes(row));
 					for (Text text : values) {
 						byte[] valueB = Bytes.toBytes(text.toString());
-						// 没有列了，qualifier填null即可
 						put.add(familyB, null, valueB);
 						if (!put.isEmpty()) {
 							// 将数据填到指定的表中
@@ -328,12 +592,17 @@ Job 部分核心部分其实就一行：
 				jobOne.setNumReduceTasks(1);
 				jobOne.setMapOutputKeyClass(Text.class);
 				jobOne.setMapOutputValueClass(Text.class);
+				// 设置输出类型，可省略
 				jobOne.setOutputKeyClass(ImmutableBytesWritable.class);
 				jobOne.setOutputValueClass(Put.class);
-				FileInputFormat.addInputPath(jobOne, new Path(input));
+				// 多表输出
 				jobOne.setOutputFormatClass(MultiTableOutputFormat.class);
+				
+				FileInputFormat.addInputPath(jobOne, new Path(input));
+				// 加载依赖环境
 				TableMapReduceUtil.addDependencyJars(jobOne);
 		        TableMapReduceUtil.addDependencyJars(jobOne.getConfiguration());
+		        
 				jobOne.waitForCompletion(true);
 			} catch (Exception e) {
 				System.out.println("出现异常了");
@@ -365,44 +634,34 @@ Job 部分核心部分其实就一行：
 
 MapOne 也不多说了，根据业务需求灵活变动即可。
 
-ReduceOne 变动了，这里使用了最原始的 Reducer ，TableReducer 的父类，你要问：为什么不使用 TableReducer 了呢？嗯，这里完全可以用 TableReducer 做如下改动即可：
+至于使用原生 Reducer 就改一行，不再赘述：
 
 将
 
-	public static class ReduceOne extends Reducer<Text, Text, ImmutableBytesWritable, Put> {
+	public static class ReduceOne extends TableReducer<Text, Text, ImmutableBytesWritable> {
 
 更改为：
 
-	public static class ReduceOne extends TableReducer<Text, Text, ImmutableBytesWritable> {
-
-即可。
+	public static class ReduceOne extends Reducer<Text, Text, ImmutableBytesWritable, Put> {
 
 多表输出的核心就是这个 ImmutableBytesWritable (KEYOUT)，它控制着数据往哪个表存，里面的内容不再赘述。
 
-下面再谈一下Job。
+Job中要注意的就这一行：
 
-Job中没有使用 TableMapReduceUtil 指定表了，而是变动了如下代码：
-
-	// 指定了输出Key的类型
-	jobOne.setOutputKeyClass(ImmutableBytesWritable.class);
-	// 指定输出Value的类型
-	jobOne.setOutputValueClass(Put.class);
-	
-	// 指定输出格式为多表输出（TableReducer默认的为TableOutputFormat）
 	jobOne.setOutputFormatClass(MultiTableOutputFormat.class);
-	// 添加HBase依赖环境（普通的Job是不会主动加载HBase依赖的）
-	TableMapReduceUtil.addDependencyJars(jobOne);
-	TableMapReduceUtil.addDependencyJars(jobOne.getConfiguration());
 
-你应该有几个问题吧:
+多表输出在Job中不需指定表。
 
-上面的例子为什么没有`setOutputKeyClass`,`setOutputValueClass`,`setOutputFormatClass`?
+多表输出也不适合使用 `TableMapReduceUtil.initTableReducerJob` , 如果使用了，它最多只会向最后一个配置的表中加入数据。
 
-使用 `TableReducer` 不能实现多表输出吗？应该怎样设置？
+例：
 
-请带着这些疑问自行测试（我不能告诉你我不知道呀）。
+	TableMapReduceUtil.initTableReducerJob("HB_hyx_history", ReduceOne.class, jobOne);
+	TableMapReduceUtil.initTableReducerJob("HB_hyx_math", ReduceOne.class, jobOne);
 
-## 从HBase中读数据到文件
+最多只会更新插入到 `HB_hyx_math` 表中，不会对 `HB_hyx_history` 作任何操作。
+
+## 从HBase中读取数据到文件
 
 说完了写，该到读了。
 
@@ -410,7 +669,7 @@ Job中没有使用 TableMapReduceUtil 指定表了，而是变动了如下代码
 
 现在我们从 `HB_hyx_school` 中获取所有的学生姓名。
 
-### MapReduce 实现
+### MapReduce 实例五
 
 代码如下：
 
@@ -489,11 +748,16 @@ Job中没有使用 TableMapReduceUtil 指定表了，而是变动了如下代码
 				Scan scan = new Scan();
 				Job jobOne = new Job(conf, "Dragon ReadHBaseToHDFS Job 1 - " + DateUtils.format2date(new Date(), "yyyy-MM-dd HH:mm:ss"));
 				jobOne.setJarByClass(ReadHBaseToHDFS.class);
-				TableMapReduceUtil.initTableMapperJob("HB_hyx_school", scan, MapOne.class, ImmutableBytesWritable.class, Put.class, jobOne);
 				jobOne.setReducerClass(ReduceOne.class);
 				jobOne.setNumReduceTasks(1);
+				// Mapper的输出类型可以省略
+				jobOne.setMapOutputKeyClass(ImmutableBytesWritable.class);
+				jobOne.setMapOutputValueClass(Put.class);
+				
 				jobOne.setOutputKeyClass(Text.class);
 				jobOne.setOutputValueClass(NullWritable.class);
+				// 待读取表配置
+				TableMapReduceUtil.initTableMapperJob("HB_hyx_school", scan, MapOne.class, ImmutableBytesWritable.class, Put.class, jobOne);
 				FileOutputFormat.setOutputPath(jobOne, new Path(output));
 				jobOne.waitForCompletion(true);
 				
@@ -534,6 +798,16 @@ MapOne 继承自 TableMapper
 
 从构造方法中可以得知，TableMapper 的 KEYOUT,VALUEOUT 对应 Mapper 的输出类型，而输入类型是确定的：ImmutableBytesWritable,Result.
 
+使用原生 Mapper 也很简单，也是一行的事：
+
+将
+
+	public static class MapOne extends TableMapper<ImmutableBytesWritable, Put> {
+
+替换为：
+
+	public static class MapOne extends Mapper<ImmutableBytesWritable, Result, ImmutableBytesWritable, Put> {
+
 ImmutableBytesWritable 对应 HBase 的 rowKey 我们这里就是 学生姓名 。
 
 无需理会我的 `resultToPut`，本例中没实际用处。
@@ -547,9 +821,257 @@ Job 阶段有以下几个点：
 
 应该可以很容易看懂啥意思，不多说了。
 
-当然，我们也可以不用 TableMapper , initTableMapperJob , 跟我们上面的输出到HBase类似，直接采用普通的 Mapper 配合 TableInputFormat 即可实现从 HBase 读取数据。
+### MapReduce 实例六
 
-有兴趣的话，请自行测试，注意相应的输入输出及依赖等。
+不想使用 `initTableMapperJob` 也是可以的。
+
+代码如下：
+
+	import java.io.IOException;
+	import java.security.PrivilegedExceptionAction;
+	import java.util.Date;
+	
+	import org.apache.hadoop.conf.Configuration;
+	import org.apache.hadoop.fs.FileSystem;
+	import org.apache.hadoop.fs.Path;
+	import org.apache.hadoop.hbase.KeyValue;
+	import org.apache.hadoop.hbase.client.Put;
+	import org.apache.hadoop.hbase.client.Result;
+	import org.apache.hadoop.hbase.io.ImmutableBytesWritable;
+	import org.apache.hadoop.hbase.mapreduce.TableInputFormat;
+	import org.apache.hadoop.hbase.mapreduce.TableMapReduceUtil;
+	import org.apache.hadoop.hbase.mapreduce.TableMapper;
+	import org.apache.hadoop.hbase.util.Bytes;
+	import org.apache.hadoop.io.NullWritable;
+	import org.apache.hadoop.io.Text;
+	import org.apache.hadoop.mapreduce.Job;
+	import org.apache.hadoop.mapreduce.Reducer;
+	import org.apache.hadoop.mapreduce.lib.output.FileOutputFormat;
+	import org.apache.hadoop.security.UserGroupInformation;
+	
+	import com.dragon.core.utils.DateUtils;
+	import com.dragon.main.common.utils.HadoopUtils;
+	
+	/**
+	 * @author panda
+	 */
+	public class ReadHBaseToHDFS {
+	
+		public static class MapOne extends TableMapper<ImmutableBytesWritable, Put> {
+	
+			@Override
+			protected void map(ImmutableBytesWritable key, Result value, Context context) throws IOException, InterruptedException {
+				context.write(key, resultToPut(key, value));
+			}
+			
+		}
+		
+		/**
+		 * 将result转化为put
+		 * 
+		 * @param key
+		 * @param result
+		 * @return
+		 * @throws IOException
+		 */
+		private static Put resultToPut(ImmutableBytesWritable row, Result result) throws IOException {
+	  		Put put = new Put(row.get());
+	 		for (KeyValue kv : result.raw()) {
+				put.add(kv);
+			}
+			return put;
+	   	}
+		
+		public static class ReduceOne extends Reducer<ImmutableBytesWritable, Put, Text, NullWritable> {
+	
+			@Override
+			protected void reduce(ImmutableBytesWritable key, Iterable<Put> values, Context context) throws IOException, InterruptedException {
+				String row = Bytes.toString(key.get());
+				context.write(new Text(row), NullWritable.get());
+			}
+			
+		}
+		
+		public static void runJob() throws Exception {
+			Configuration conf = HadoopUtils.getDragonHbaseConfiguration();
+			FileSystem fs = FileSystem.get(conf);
+			String output = "/user/panda/output/course";
+			Path src = new Path(output);
+			fs.delete(src, true);
+			try {
+				// 在初始化Job前配置读取的表信息
+				conf.set(TableInputFormat.INPUT_TABLE, "HB_hyx_school");
+				
+				Job jobOne = new Job(conf, "Dragon ReadHBaseToHDFS Job 1 - " + DateUtils.format2date(new Date(), "yyyy-MM-dd HH:mm:ss"));
+				jobOne.setJarByClass(ReadHBaseToHDFS.class);
+				jobOne.setReducerClass(ReduceOne.class);
+				jobOne.setNumReduceTasks(1);
+				// Mapper的输出类型可以省略
+				jobOne.setMapOutputKeyClass(ImmutableBytesWritable.class);
+				jobOne.setMapOutputValueClass(Put.class);
+				
+				jobOne.setOutputKeyClass(Text.class);
+				jobOne.setOutputValueClass(NullWritable.class);
+				
+				// 设置输入类型为 TableInputFormat
+				jobOne.setInputFormatClass(TableInputFormat.class);
+				// 加载依赖
+				TableMapReduceUtil.addDependencyJars(jobOne);
+				TableMapReduceUtil.addDependencyJars(jobOne.getConfiguration());
+				
+				FileOutputFormat.setOutputPath(jobOne, new Path(output));
+				jobOne.waitForCompletion(true);
+				
+			} catch (Exception e) {
+				System.out.println("出现异常了");
+			} finally {
+	
+			}
+	
+		}
+	
+		public static void main(final String[] args) throws IOException, InterruptedException {
+	
+			UserGroupInformation ugi = UserGroupInformation.createRemoteUser("panda");
+			ugi.doAs(new PrivilegedExceptionAction<Void>() {
+				@Override
+				public Void run() throws Exception {
+					runJob();
+					return null;
+				}
+			});
+		}
+	
+	}
+
+注释的很详细了，首先配置读取的表，然后设置输入类型，再者添加依赖支持。
+
+## 从多个HBase中读数据到文件
+
+既然要画圆，就需要将其闭合，当然少不了从多个HBase中读取数据了。
+
+下面我们要把数学，语文表中的同学的成绩输出来。
+
+### MapReduce 实例七
+
+代码如下：
+
+	import java.io.IOException;
+	import java.security.PrivilegedExceptionAction;
+	import java.util.ArrayList;
+	import java.util.Date;
+	import java.util.List;
+	
+	import org.apache.hadoop.conf.Configuration;
+	import org.apache.hadoop.fs.FileSystem;
+	import org.apache.hadoop.fs.Path;
+	import org.apache.hadoop.hbase.KeyValue;
+	import org.apache.hadoop.hbase.client.Result;
+	import org.apache.hadoop.hbase.client.Scan;
+	import org.apache.hadoop.hbase.io.ImmutableBytesWritable;
+	import org.apache.hadoop.hbase.mapreduce.TableMapReduceUtil;
+	import org.apache.hadoop.hbase.mapreduce.TableMapper;
+	import org.apache.hadoop.hbase.util.Bytes;
+	import org.apache.hadoop.io.Text;
+	import org.apache.hadoop.mapreduce.Job;
+	import org.apache.hadoop.mapreduce.Reducer;
+	import org.apache.hadoop.mapreduce.lib.output.FileOutputFormat;
+	import org.apache.hadoop.security.UserGroupInformation;
+	
+	import com.dragon.core.utils.DateUtils;
+	import com.dragon.main.common.utils.HadoopUtils;
+	
+	/**
+	 * @author panda
+	 */
+	public class ReadMultipleHBaseToHDFS {
+	
+		public static class MapOne extends TableMapper<ImmutableBytesWritable, Text> {
+	
+			@Override
+			protected void map(ImmutableBytesWritable key, Result value, Context context) throws IOException, InterruptedException {
+				for (KeyValue kv : value.raw()) {
+					String val = Bytes.toString(kv.getValue());
+					context.write(key, new Text(val));
+				}
+			}
+	
+		}
+	
+		public static class ReduceOne extends Reducer<ImmutableBytesWritable, Text, Text, Text> {
+	
+			@Override
+			protected void reduce(ImmutableBytesWritable key, Iterable<Text> values, Context context) throws IOException, InterruptedException {
+				String row = Bytes.toString(key.get());
+				for (Text text : values) {
+					context.write(new Text(row), text);
+				}
+			}
+	
+		}
+	
+		public static void runJob() throws Exception {
+			Configuration conf = HadoopUtils.getDragonHbaseConfiguration();
+			FileSystem fs = FileSystem.get(conf);
+			String output = "/user/panda/output/course";
+			Path src = new Path(output);
+			fs.delete(src, true);
+			try {
+				// 设置多表输入的 scans
+				List<Scan> scans = new ArrayList<Scan>();
+				Scan scan1 = new Scan();
+				scan1.setAttribute(Scan.SCAN_ATTRIBUTES_TABLE_NAME, Bytes.toBytes("HB_hyx_math"));
+				scans.add(scan1);
+				Scan scan2 = new Scan();
+				scan2.setAttribute(Scan.SCAN_ATTRIBUTES_TABLE_NAME, Bytes.toBytes("HB_hyx_chinese"));
+				scans.add(scan2);
+	
+				Job jobOne = new Job(conf, "Dragon ReadHBaseToHDFS Job 1 - " + DateUtils.format2date(new Date(), "yyyy-MM-dd HH:mm:ss"));
+				jobOne.setJarByClass(ReadMultipleHBaseToHDFS.class);
+				jobOne.setReducerClass(ReduceOne.class);
+				jobOne.setNumReduceTasks(1);
+				jobOne.setOutputKeyClass(Text.class);
+				jobOne.setOutputValueClass(Text.class);
+				// 配置多表查询及输出Key Value类型
+				TableMapReduceUtil.initTableMapperJob(scans, MapOne.class, ImmutableBytesWritable.class, Text.class, jobOne);
+	
+				FileOutputFormat.setOutputPath(jobOne, new Path(output));
+				jobOne.waitForCompletion(true);
+	
+			} catch (Exception e) {
+				System.out.println("出现异常了");
+			} finally {
+	
+			}
+	
+		}
+	
+		public static void main(final String[] args) throws IOException, InterruptedException {
+	
+			UserGroupInformation ugi = UserGroupInformation.createRemoteUser("panda");
+			ugi.doAs(new PrivilegedExceptionAction<Void>() {
+				@Override
+				public Void run() throws Exception {
+					runJob();
+					return null;
+				}
+			});
+		}
+	
+	}
+
+运行结果：
+
+	jack	86
+	jack	90
+	marry	100
+	marry	88
+	tom	98
+	tom	95
+
+不要问我科目从哪看，两个表一下都读进来格式相同的内容，我也不知道上面的分数是数学还是语文，我只关心我读了两个表的数据。
+
+不要问我不使用 `initTableMapperJob` 而单独使用 `MultiTableInputFormat` 怎么实现多表输入？我只能告诉你，请自行查阅（我不能告诉你我没找到可行方案呀）。
 
 ## 参考资料
 
