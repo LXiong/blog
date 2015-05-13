@@ -33,7 +33,7 @@ sudo make
 sudo make install
 ```
 
-我在 Centos 6.5 上测试最新版 `1.8.10` 未通过，因为 6.5 中的 C++ 库比较旧了，而新版本的 Aria2 使用的 C++ 版本库较新，所以导致编译失败，在 Ubuntu 中编译通过，在 Centos 6.5 上编译 1.6 左右版本的测试通过。
+我在 Centos 6.5 上测试最新版 `1.8.10` 未通过，因为 6.5 中的 C++ 库比较旧了，而新版本的 Aria2 使用的 C++ 版本库较新，所以导致编译失败，在 Ubuntu 中编译通过，在 Centos 6.5 上编译 1.6 左右版本的测试通过，为了验证是否是因为系统版本问题，故在虚拟机上装了 Centos 7 对 `1.8.10` 进行编译，最终编译成功。
 
 ### Ubuntu 安装 Aria2
 
@@ -233,8 +233,11 @@ aria2c -s 2 http://host/image.iso http://mirror1/image.iso http://mirror2/image.
 
 ## aria2c help
 
-贴出帮助文档方便查阅（未翻译）
+贴出帮助文档方便查阅（未翻译，版本为：1.8.10的帮助）
 
+	[root@localhost ~]# aria2c -h#all
+	Usage: aria2c [OPTIONS] [URI | MAGNET | TORRENT_FILE | METALINK_FILE]...
+	Printing all options.
 	Options:
 	 -v, --version 打印版本号并退出。
 	
@@ -251,6 +254,36 @@ aria2c -s 2 http://host/image.iso http://mirror1/image.iso http://mirror2/image.
 	                              默认： #basic
 	                              标记： #basic, #help
 	
+	 -t, --timeout=SEC 设置超时（以秒计）。
+	
+	                              可能的取值： 1-600
+	                              默认： 60
+	                              标记： #http, #ftp
+	
+	 --connect-timeout=SEC 设置建立到HTTP/FTP/代理服务器的
+	                              链接超时（以秒计）。在链
+	                              接建立之后，此选项将失效
+	                              并以--timeout选项替代。
+	
+	                              可能的取值： 1-600
+	                              默认： 60
+	                              标记： #http, #ftp
+	
+	 -m, --max-tries=N 设置重试次数。0意味着不限次数。
+	
+	                              可能的取值： 0-*
+	                              默认： 5
+	                              标记： #http, #ftp
+	
+	 --auto-save-interval=SEC     Save a control file(*.aria2) every SEC seconds.
+	                              If 0 is given, a control file is not saved during
+	                              download. aria2 saves a control file when it stops
+	                              regardless of the value.
+	
+	                              可能的取值： 0-600
+	                              默认： 60
+	                              标记： #advanced
+	
 	 -l, --log=LOG 日志文件名称。如果指定'-'，
 	                              日志将被写到标准输出（通常是显示器）。
 	
@@ -260,60 +293,142 @@ aria2c -s 2 http://host/image.iso http://mirror1/image.iso http://mirror2/image.
 	 -d, --dir=DIR 用于存储已下载文件的目录。
 	
 	                              可能的取值： /path/to/directory
-	                              默认： /home/panda
+	                              默认： /root
 	                              标记： #basic, #file
 	
-	 -o, --out=FILE 下载文件的文件名。当使用 -Z
-	                              选项时，此选项被忽略。
+	 -o, --out=FILE               The file name of the downloaded file. When 
+	                              the -Z option is used, this option will be 
+	                              ignored.
 	
 	                              可能的取值： /path/to/file
 	                              标记： #basic, #http, #ftp, #file
 	
-	 -s, --split=N 使用N个连接下载文件。如果提供了超过N个URL，使用前N个URL而剩下的URL作为备用。
-	                    如果提供了少于N个URL，这些URL将会被重复使用来使这N个连接能够同时建立。
-	                    对相同主机的连接数被--max-connection-per-server选项所限制。
-	                    另见--min-split-size选项。
+	 -s, --split=N                Download a file using N connections. If more
+	                              than N URIs are given, first N URIs are used and
+	                              remaining URLs are used for backup. If less than
+	                              N URIs are given, those URLs are used more than
+	                              once so that N connections total are made
+	                              simultaneously. The number of connections to the
+	                              same host is restricted by the 
+	                              --max-connection-per-server option. See also the
+	                              --min-split-size option.
 	
 	                              可能的取值： 1-*
 	                              默认： 5
 	                              标记： #basic, #http, #ftp
 	
-	 --file-allocation=METHOD     Specify file allocation method.
-	                              'none' doesn't pre-allocate file space. 'prealloc'
-	                              pre-allocates file space before download begins.
-	                              This may take some time depending on the size of
-	                              the file.
-	                              If you are using newer file systems such as ext4
-	                              (with extents support), btrfs, xfs or NTFS
-	                              (MinGW build only), 'falloc' is your best
-	                              choice. It allocates large(few GiB) files
-	                              almost instantly. Don't use 'falloc' with legacy
-	                              file systems such as ext3 and FAT32 because it
-	                              takes almost same time as 'prealloc' and it
-	                              blocks aria2 entirely until allocation finishes.
-	                              'falloc' may not be available if your system
-	                              doesn't have posix_fallocate() function.
-	                              'trunc' uses ftruncate() system call or
-	                              platform-specific counterpart to truncate a file
-	                              to a specified length.
+	 -D, --daemon[=true|false]    以守护进程运行。 当前工作目录会
+	                              改变到 "/" ，同时标准输入输出和标准错误信息
+	                              会重定向到
+	                              "/dev/null".
+	
+	                              可能的取值： true, false
+	                              默认： false
+	                              标记： #advanced
+	
+	 --referer=REFERER            Set an http referrrer (Referer). This affects
+	                              all http/https downloads. If "*" is given,
+	                              the download URI is also used as the referrer.
+	                              This may be useful when used together with
+	                              the -P option.
+	
+	                              标记： #http
+	
+	 --lowest-speed-limit=SPEED 如果下载速度低于或等于此值（字节/秒），
+	                              则断开连接。0意味着aria2没有最
+	                              低速度限制。你可以使用K或M作为
+	                              后缀（1K=1024，1M=1024K）。
+	                              此选项对BT下载无效。
+	
+	                              可能的取值： 0-*
+	                              默认： 0
+	                              标记： #http, #ftp
+	
+	 --piece-length=LENGTH        Set a piece length for HTTP/FTP downloads. This
+	                              is the boundary when aria2 splits a file. All
+	                              splits occur at multiple of this length. This
+	                              option will be ignored in BitTorrent downloads.
+	                              It will be also ignored if Metalink file
+	                              contains piece hashes.
+	
+	                              可能的取值： 1048576-1073741824
+	                              默认： 1M
+	                              标记： #advanced, #http, #ftp
+	
+	 --max-overall-download-limit=SPEED 设置最大总体下载速度，以b/秒计。
+	                              0意味着不限制。
+	                              您可以附加K或M(1K = 1024, 1M = 1024K)。
+	                              要限制每个下载的下载速度，请使用
+	                              --max-download-limit选项。
+	
+	                              可能的取值： 0-*
+	                              默认： 0
+	                              标记： #http, #ftp, #bittorrent
+	
+	 --max-download-limit=速度   设置每段的最高下载速度
+	                              单位bytes/sec. 0 意味着不限置（默认）
+	                              可以跟随 K 或 M(1K = 1024, 1M = 1024K).
+	                              整体速度限制，使用
+	                              --max-overall-download-limit
+	
+	                              可能的取值： 0-*
+	                              默认： 0
+	                              标记： #http, #ftp, #bittorrent
+	
+	 --file-allocation=METHOD     指定文件分配方式.
+	                              'none' 选项表示不预分配空间. 'prealloc'
+	                              表示在下载真正开始前预先分配空间.
+	                              根据文件的大小，这可能会花费一些时间
+	                              如果你正在使用的是新型文件系统如ext4
+	                              (启用扩展支持的), btrfs, xfs 或 NTFS
+	                              (仅限MinGW环境 ), 'falloc' 是你最好的
+	                              选择. 它几乎能在一瞬间完成很大(几个 GiB) 
+	                              文件的预分配. 但请千万注意不要使用 'falloc' 
+	                              在比较旧的文件系统上，如ext3 和 FAT32 因为
+	                             在这些文件系统上该选项花费的时间和 'prealloc'
+	                             不相上下并且在分配完成前aria2 会被完全阻塞.
+	                              如果你的系统中不存在posix_fallocate()函数(在嵌
+	                              入式系统如OpenWRT中该函数一般由uClibc提供)
+	                             'falloc'  选项将不适用,强制使用该选项将不能启动aria2.
+	                              'trunc' 将调用 ftruncate()或平台指定的相应功能
+	                              创建一个制定大小的文件。
 	
 	                              可能的取值： none, prealloc, trunc, falloc
 	                              默认： prealloc
 	                              标记： #basic, #file
 	
-	 -V, --check-integrity[=true|false] Check file integrity by validating piece
-	                              hashes or a hash of entire file. This option has
-	                              effect only in BitTorrent, Metalink downloads
-	                              with checksums or HTTP(S)/FTP downloads with
-	                              --checksum option. If piece hashes are provided,
-	                              this option can detect damaged portions of a file
-	                              and re-download them. If a hash of entire file is
-	                              provided, hash check is only done when file has
-	                              been already download. This is determined by file
-	                              length. If hash check fails, file is
-	                              re-downloaded from scratch. If both piece hashes
-	                              and a hash of entire file are provided, only
-	                              piece hashes are used.
+	 --no-file-allocation-limit=SIZE 小于SIZE大小的文件
+	                              不预先分配文件空间。
+	                              您可以附加K或M（1K=1024，1M=1024K）。
+	
+	                              可能的取值： 0-*
+	                              默认： 5M
+	                              标记： #advanced, #file
+	
+	 --allow-overwrite[=true|false] 如果没有控制文件，重新开始下载。
+	                                            另见 --auto-file-renaming 选项。
+	
+	                              可能的取值： true, false
+	                              默认： false
+	                              标记： #advanced, #file
+	
+	 --realtime-chunk-checksum[=true|false]  在下载过程中实时校验文件块
+	                                                                            如果提供了文件校验值
+	
+	                              可能的取值： true, false
+	                              默认： true
+	                              标记： #metalink, #checksum
+	
+	 -V, --check-integrity[=true|false]   通过验证文件块哈希值或整个文
+	                             件哈希值检查文件的完整性。该选项仅生效于 
+	                             BitTorrent, Metalink 下载启用 --checksums 选项时
+	                             或 HTTP(S)/FTP 下载启用 --checksum 选项时. 如过
+	                             提供了文件块的哈希校验值，则会在下载过程中就检
+	                             测文件的那部分已损坏并且会重新下载损坏的部分;如
+	                             果给定的是整个文件的哈希值，那么校验只能在下载
+	                             已经完成的情况下进行 。同时，这也取决于文件的长
+	                             度，如果哈系校验失败, 则会重新下载.如果整个文件哈
+	                             希值和块哈希都存在，只有块哈希会被使用。
 	
 	                              可能的取值： true, false
 	                              默认： false
@@ -327,6 +442,12 @@ aria2c -s 2 http://host/image.iso http://mirror1/image.iso http://mirror2/image.
 	                              默认： false
 	                              标记： #basic, #http, #ftp
 	
+	 -n, --no-netrc[=true|false]  禁止 netrc 支持。
+	
+	                              可能的取值： true, false
+	                              默认： false
+	                              标记： #http, #ftp
+	
 	 -i, --input-file=FILE 下载FILE中列出的地址。
 	                              可以一次使用多个地址，在同一行里使用制表符分隔多个地址。使用"-"时从标准输入读取。
 	                              另外，在每一行地址后可以指定选项。包含选项的行必须以至少一个空格开始，并且每行一个选项。
@@ -334,6 +455,18 @@ aria2c -s 2 http://host/image.iso http://mirror1/image.iso http://mirror2/image.
 	
 	                              可能的取值： /path/to/file, -
 	                              标记： #basic
+	
+	 --deferred-input[=true|false] If true is given, aria2 does not read all URIs
+	                              and options from file specified by -i option at
+	                              startup, but it reads one by one when it needs
+	                              later. This may reduce memory usage if input
+	                              file contains a lot of URIs to download.
+	                              If false is given, aria2 reads all URIs and
+	                              options at startup.
+	
+	                              可能的取值： true, false
+	                              默认： false
+	                              标记： #advanced
 	
 	 -j, --max-concurrent-downloads=N 设置对于独立的（http/ftp）地址、torrent和metalink的最大并行下载数量。
 	                              另见--split选项。
@@ -349,6 +482,379 @@ aria2c -s 2 http://host/image.iso http://mirror1/image.iso http://mirror2/image.
 	                              可能的取值： true, false
 	                              默认： false
 	                              标记： #basic
+	
+	 --auto-file-renaming[=true|false] 如果相同名称的文件已经存在，
+	                              则重命名文件。此选项只能在
+	                              http(s)/ftp下载中使用。
+	                              新的文件名将被附加一个点和数字
+	                              （1至9999）。
+	
+	                              可能的取值： true, false
+	                              默认： true
+	                              标记： #advanced, #file
+	
+	 -P, --parameterized-uri[=true|false] 启用对有参数URI的支持。
+	                              您可以指定某些部分：
+	                              http://{sv1,sv2,sv3}/foo.iso
+	                              您也可以使用步进计数器指定数
+	                              字顺序：
+	                              http://host/image[000-100:2].img
+	                              步进计数器可以被省略。
+	                              如果所有的链接没有指向同一个文件，
+	                              就像上面第二个例子一样，则需要-Z
+	                              选项。
+	
+	                              可能的取值： true, false
+	                              默认： false
+	                              标记： #advanced
+	
+	 --allow-piece-length-change[=true|false] 如果为 false, 当文件的某一块内
+	                                                   容与控制文件中的描述不同时aria2 将会停止相
+	                                                   应文件的下载;反之，如果为 true,遇到文件块内
+	                                                   容与aria2控制文件中的描述不符时,下载仍将继
+	                                                   续,风险是文件的某些内容可能会丢失
+	
+	                              可能的取值： true, false
+	                              默认： false
+	                              标记： #advanced
+	
+	 --no-conf[=true|false]       Disable loading aria2.conf file.
+	
+	                              可能的取值： true, false
+	                              默认： false
+	                              标记： #advanced
+	
+	 --conf-path=PATH 将配置文件的路径修改为PATH的值。
+	
+	                              可能的取值： /path/to/file
+	                              默认： /root/.aria2/aria2.conf
+	                              标记： #advanced
+	
+	 --stop=SEC 在经过SEC秒之后停止程序。
+	                              如果给定的值是0，此功能将被禁止。
+	
+	                              可能的取值： 0-2147483647
+	                              默认： 0
+	                              标记： #advanced
+	
+	 -q, --quiet[=true|false] 使aria2安静（即不在控制台输出）。
+	
+	                              可能的取值： true, false
+	                              默认： false
+	                              标记： #advanced
+	
+	 --summary-interval=SEC 设置下载过程摘要的输出间隔。
+	                              设置0会禁止输出。
+	
+	                              可能的取值： 0-2147483647
+	                              默认： 60
+	                              标记： #advanced
+	
+	 --log-level=LEVEL            Set log level to output to file specified using
+	                             --log option.
+	
+	                              可能的取值： debug, info, notice, warn, error
+	                              默认： debug
+	                              标记： #advanced
+	
+	 --console-log-level=LEVEL    Set log level to output to console.
+	
+	                              可能的取值： debug, info, notice, warn, error
+	                              默认： notice
+	                              标记： #advanced
+	
+	 --uri-selector=SELECTOR 指定URI选择算法。
+	                              如果给定'inorder'，将以URI列表
+	                              中显示的顺序尝试URI。
+	                              如果给定'feedback'，aria2将使用
+	                              在上个下载中监测到的下载速度并
+	                              选择URI列表中最快的服务器。这
+	                              也可以有效地跳过死镜像。监测到
+	                              的下载速度是--server-stat-of和
+	                              --server-stat-if选项中提到的服务
+	                              器性能配置文件的一部分。
+	                              如果给定'adaptive'，则为第一个
+	                              和保留的链接选择最好的镜像。
+	                              对于追回的一个，将返回未经测试
+	                              的镜像，并且，如果如果它们中的
+	                              每一个都经过测，则返回经过再次
+	                              测试的镜像。否则，不再选择镜像。
+	                              就像'feedback'，将使用服务器的
+	                              性能配置文件。
+	
+	                              可能的取值： inorder, feedback, adaptive
+	                              默认： feedback
+	                              标记： #http, #ftp
+	
+	 --server-stat-timeout=SEC 指定自从上次连接服务器以
+	                              来，废止性能配置文件
+	                              的超时（以秒计）。
+	
+	                              可能的取值： 0-2147483647
+	                              默认： 86400
+	                              标记： #http, #ftp
+	
+	 --server-stat-if=FILE 指定要加载的服务器的性能配置文件的名称。
+	                              加载的数据将被用在
+	                              某些URI选择器之中，比如'feedback'。
+	                              也可以参阅--uri-selector选项
+	
+	                              可能的取值： /path/to/file
+	                              标记： #http, #ftp
+	
+	 --server-stat-of=FILE 指定服务器保存的性能配置文件的名称。
+	                              您也可以使用--server-stat-if
+	                              选项加载保存的数据。
+	
+	                              可能的取值： /path/to/file
+	                              标记： #http, #ftp
+	
+	 -R, --remote-time[=true|false] 从远程HTTP/FTP服务器检索远程
+	                              文件的时间戳以及其是否有效，将
+	                              之应用到本地文件。
+	
+	                              可能的取值： true, false
+	                              默认： false
+	                              标记： #http, #ftp
+	
+	 --max-file-not-found=NUM 如果aria2从远程HTTP/FTP服务器收到
+	                              `未发现文件'状态达到NUM次，没
+	                              有下载到1byte，则强制结束下载。
+	                              指定0则禁止此选项。
+	                              此选项仅在使用HTTP/FTP服务器
+	                              时有效。
+	
+	                              可能的取值： 0-*
+	                              默认： 0
+	                              标记： #http, #ftp
+	
+	 --event-poll=POLL            Specify the method for polling events.
+	
+	                              可能的取值： epoll, poll, select
+	                              默认： epoll
+	                              标记： #advanced
+	
+	 --enable-rpc[=true|false]    Enable JSON-RPC/XML-RPC server.
+	                              It is strongly recommended to set secret
+	                              authorization token using --rpc-secret option.
+	                              See also --rpc-listen-port option.
+	
+	                              可能的取值： true, false
+	                              默认： false
+	                              标记： #rpc
+	
+	 --rpc-listen-port=PORT       Specify a port number for JSON-RPC/XML-RPC server
+	                              to listen to.
+	
+	                              可能的取值： 1024-65535
+	                              默认： 6800
+	                              标记： #rpc
+	
+	 --rpc-user=USER              Set JSON-RPC/XML-RPC user. This option will be
+	                              deprecated in the future release. Migrate to
+	                              --rpc-secret option as soon as possible.
+	
+	                              标记： #rpc, #deprecated
+	
+	 --rpc-passwd=PASSWD          Set JSON-RPC/XML-RPC password. This option will
+	                              be deprecated in the future release. Migrate to
+	                              --rpc-secret option as soon as possible.
+	
+	                              标记： #rpc, #deprecated
+	
+	 --rpc-max-request-size=SIZE  Set max size of JSON-RPC/XML-RPC request. If aria2
+	                              detects the request is more than SIZE bytes, it
+	                              drops connection.
+	
+	                              可能的取值： 0-*
+	                              默认： 2M
+	                              标记： #rpc
+	
+	 --rpc-listen-all[=true|false] Listen incoming JSON-RPC/XML-RPC requests on all
+	                              network interfaces. If false is given, listen only
+	                              on local loopback interface.
+	
+	                              可能的取值： true, false
+	                              默认： false
+	                              标记： #rpc
+	
+	 --rpc-allow-origin-all[=true|false] Add Access-Control-Allow-Origin header
+	                              field with value '*' to the RPC response.
+	
+	                              可能的取值： true, false
+	                              默认： false
+	                              标记： #rpc
+	
+	 --rpc-certificate=FILE       Use the certificate in FILE for RPC server.
+	                              The certificate must be in PEM format.
+	                              Use --rpc-private-key option to specify the
+	                              private key. Use --rpc-secure option to enable
+	                              encryption.
+	
+	                              可能的取值： /path/to/file
+	                              标记： #rpc
+	
+	 --rpc-private-key=FILE       Use the private key in FILE for RPC server.
+	                              The private key must be decrypted and in PEM
+	                              format. Use --rpc-secure option to enable
+	                              encryption. See also --rpc-certificate option.
+	
+	                              可能的取值： /path/to/file
+	                              标记： #rpc
+	
+	 --rpc-secure[=true|false]    RPC transport will be encrypted by SSL/TLS.
+	                              The RPC clients must use https scheme to access
+	                              the server. For WebSocket client, use wss
+	                              scheme. Use --rpc-certificate and
+	                              --rpc-private-key options to specify the
+	                              server certificate and private key.
+	
+	                              可能的取值： true, false
+	                              默认： false
+	                              标记： #rpc
+	
+	 --rpc-save-upload-metadata[=true|false] Save the uploaded torrent or
+	                              metalink metadata in the directory specified
+	                              by --dir option. The filename consists of
+	                              SHA-1 hash hex string of metadata plus
+	                              extension. For torrent, the extension is
+	                              '.torrent'. For metalink, it is '.meta4'.
+	                              If false is given to this option, the
+	                              downloads added by aria2.addTorrent or
+	                              aria2.addMetalink will not be saved by
+	                              --save-session option.
+	
+	                              可能的取值： true, false
+	                              默认： true
+	                              标记： #rpc
+	
+	 --dry-run[=true|false]       If true is given, aria2 just checks whether the
+	                              remote file is available and doesn't download
+	                              data. This option has effect on HTTP/FTP download.
+	                              BitTorrent downloads are canceled if true is
+	                              specified.
+	
+	                              可能的取值： true, false
+	                              默认： false
+	                              标记： #http, #ftp
+	
+	 --reuse-uri[=true|false]     Reuse already used URIs if no unused URIs are
+	                              left.
+	
+	                              可能的取值： true, false
+	                              默认： true
+	                              标记： #http, #ftp
+	
+	 --on-download-start=COMMAND  Set the command to be executed after download
+	                              got started. aria2 passes 3 arguments to COMMAND:
+	                              GID, the nubmer of files and file path. See Event
+	                              Hook in man page for more details.
+	
+	                              可能的取值： /path/to/command
+	                              标记： #advanced, #hook
+	
+	 --on-download-pause=COMMAND  Set the command to be executed after download
+	                              was paused.
+	                              See --on-download-start option for the
+	                              requirement of COMMAND.
+	
+	                              可能的取值： /path/to/command
+	                              标记： #advanced, #hook
+	
+	 --on-download-stop=COMMAND   Set the command to be executed after download
+	                              stopped. You can override the command to be
+	                              executed for particular download result using
+	                              --on-download-complete and --on-download-error. If
+	                              they are specified, command specified in this
+	                              option is not executed.
+	                              See --on-download-start option for the
+	                              requirement of COMMAND.
+	
+	                              可能的取值： /path/to/command
+	                              标记： #advanced, #hook
+	
+	 --on-download-complete=COMMAND Set the command to be executed after download
+	                              completed.
+	                              See --on-download-start option for the
+	                              requirement of COMMAND.
+	                              See also --on-download-stop option.
+	
+	                              可能的取值： /path/to/command
+	                              标记： #advanced, #hook
+	
+	 --on-download-error=COMMAND  Set the command to be executed after download
+	                              aborted due to error.
+	                              See --on-download-start option for the
+	                              requirement of COMMAND.
+	                              See also --on-download-stop option.
+	
+	                              可能的取值： /path/to/command
+	                              标记： #advanced, #hook
+	
+	 --interface=INTERFACE        Bind sockets to given interface. You can specify
+	                              interface name, IP address and hostname.
+	
+	                              可能的取值： interface, IP address, hostname
+	                              标记： #advanced
+	
+	 --disable-ipv6[=true|false]  Disable IPv6.
+	
+	                              可能的取值： true, false
+	                              默认： false
+	                              标记： #advanced
+	
+	 --human-readable[=true|false] Print sizes and speed in human readable format
+	                              (e.g., 1.2Ki, 3.4Mi) in the console readout.
+	
+	                              可能的取值： true, false
+	                              默认： true
+	                              标记： #advanced
+	
+	 --remove-control-file[=true|false] Remove control file before download. Using
+	                              with --allow-overwrite=true, download always
+	                              starts from scratch. This will be useful for
+	                              users behind proxy server which disables resume.
+	
+	                              可能的取值： true, false
+	                              默认： false
+	                              标记： #advanced
+	
+	 --always-resume[=true|false] Always resume download. If true is given, aria2
+	                              always tries to resume download and if resume is
+	                              not possible, aborts download. If false is given,
+	                              when all given URIs do not support resume or
+	                              aria2 encounters N URIs which does not support
+	                              resume (N is the value specified using
+	                              --max-resume-failure-tries option), aria2
+	                              downloads file from scratch.
+	                              See --max-resume-failure-tries option.
+	
+	                              可能的取值： true, false
+	                              默认： true
+	                              标记： #advanced, #http, #ftp
+	
+	 --max-resume-failure-tries=N When used with --always-resume=false, aria2
+	                              downloads file from scratch when aria2 detects N
+	                              number of URIs that does not support resume. If N
+	                              is 0, aria2 downloads file from scratch when all
+	                              given URIs do not support resume.
+	                              See --always-resume option.
+	
+	                              可能的取值： 0-*
+	                              默认： 0
+	                              标记： #advanced, #http, #ftp
+	
+	 --save-session=FILE          Save error/unfinished downloads to FILE on exit.
+	                              You can pass this output file to aria2c with -i
+	                              option on restart. Please note that downloads
+	                              added by aria2.addTorrent and aria2.addMetalink
+	                              RPC method and whose metadata could not be saved
+	                              as a file will not be saved. Downloads removed
+	                              using aria2.remove and aria2.forceRemove will not
+	                              be saved.
+	
+	                              可能的取值： /path/to/file
+	                              标记： #advanced
 	
 	 -x, --max-connection-per-server=NUM The maximum number of connections to one
 	                              server for each download.
@@ -370,6 +876,245 @@ aria2c -s 2 http://host/image.iso http://mirror1/image.iso http://mirror2/image.
 	                              默认： 20M
 	                              标记： #basic, #http, #ftp
 	
+	 --conditional-get[=true|false] Download file only when the local file is older
+	                              than remote file. Currently, this function has
+	                              many limitations. See man page for details.
+	
+	                              可能的取值： true, false
+	                              默认： false
+	                              标记： #advanced, #http
+	
+	 --max-download-result=NUM    Set maximum number of download result kept in
+	                              memory. The download results are completed/error/
+	                              removed downloads. The download results are stored
+	                              in FIFO queue and it can store at most NUM
+	                              download results. When queue is full and new
+	                              download result is created, oldest download result
+	                              is removed from the front of the queue and new one
+	                              is pushed to the back. Setting big number in this
+	                              option may result high memory consumption after
+	                              thousands of downloads. Specifying 0 means no
+	                              download result is kept.
+	
+	                              可能的取值： 0-*
+	                              默认： 1000
+	                              标记： #advanced
+	
+	 --retry-wait=SEC            设定重试等待时间. 当 SEC > 0时,
+	                               如果HTTP 返回503 错误，aria2会等待 
+	                              SEC 秒然后重试下载.
+	
+	                              可能的取值： 0-600
+	                              默认： 0
+	                              标记： #http, #ftp
+	
+	 --show-console-readout[=true|false] Show console readout.
+	
+	                              可能的取值： true, false
+	                              默认： true
+	                              标记： #advanced
+	
+	 --stream-piece-selector=SELECTOR Specify piece selection algorithm
+	                              used in HTTP/FTP download. Piece means fixed
+	                              length segment which is downloaded in parallel
+	                              in segmented download. If 'default' is given,
+	                              aria2 selects piece so that it reduces the
+	                              number of establishing connection. This is
+	                              reasonable default behaviour because
+	                              establishing connection is an expensive
+	                              operation.
+	                              If 'inorder' is given, aria2 selects piece which
+	                              has minimum index. Index=0 means first of the
+	                              file. This will be useful to view movie while
+	                              downloading it. --enable-http-pipelining option
+	                              may be useful to reduce reconnection overhead.
+	                              Please note that aria2 honors
+	                              --min-split-size option, so it will be necessary
+	                              to specify a reasonable value to
+	                              --min-split-size option.
+	                              If 'geom' is given, at the beginning aria2
+	                              selects piece which has minimum index like
+	                              'inorder', but it exponentially increasingly
+	                              keeps space from previously selected piece. This
+	                              will reduce the number of establishing connection
+	                              and at the same time it will download the
+	                              beginning part of the file first. This will be
+	                              useful to view movie while downloading it.
+	
+	                              可能的取值： default, inorder, geom
+	                              默认： default
+	                              标记： #http, #ftp
+	
+	 --truncate-console-readout[=true|false] Truncate console readout to fit in
+	                              a single line.
+	
+	                              可能的取值： true, false
+	                              默认： true
+	                              标记： #advanced
+	
+	 --pause[=true|false]         Pause download after added. This option is
+	                              effective only when --enable-rpc=true is given.
+	
+	                              可能的取值： true, false
+	                              默认： false
+	                              标记： #advanced, #rpc
+	
+	 --download-result=OPT        This option changes the way "Download Results"
+	                              is formatted. If OPT is 'default', print GID,
+	                              status, average download speed and path/URI. If
+	                              multiple files are involved, path/URI of first
+	                              requested file is printed and remaining ones are
+	                              omitted.
+	                              If OPT is 'full', print GID, status, average
+	                              download speed, percentage of progress and
+	                              path/URI. The percentage of progress and
+	                              path/URI are printed for each requested file in
+	                              each row.
+	
+	                              可能的取值： default, full
+	                              默认： default
+	                              标记： #advanced
+	
+	 --hash-check-only[=true|false] If true is given, after hash check using
+	                              --check-integrity option, abort download whether
+	                              or not download is complete.
+	
+	                              可能的取值： true, false
+	                              默认： false
+	                              标记： #advanced, #metalink, #bittorrent, #file, #checksum
+	
+	 --checksum=TYPE=DIGEST       Set checksum. TYPE is hash type. The supported
+	                              hash type is listed in "Hash Algorithms" in
+	                              "aria2c -v". DIGEST is hex digest.
+	                              For example, setting sha-1 digest looks like
+	                              this:
+	                              sha-1=0192ba11326fe2298c8cb4de616f4d4140213838
+	                              This option applies only to HTTP(S)/FTP
+	                              downloads.
+	
+	                              可能的取值： HASH_TYPE=HEX_DIGEST
+	                              标记： #http, #ftp, #checksum
+	
+	 --stop-with-process=PID      Stop application when process PID is not running.
+	                              This is useful if aria2 process is forked from a
+	                              parent process. The parent process can fork aria2
+	                              with its own pid and when parent process exits
+	                              for some reason, aria2 can detect it and shutdown
+	                              itself.
+	
+	                              可能的取值： 0-*
+	                              标记： #advanced
+	
+	 --enable-mmap[=true|false]   Map files into memory.
+	
+	                              可能的取值： true, false
+	                              默认： false
+	                              标记： #advanced, #experimental
+	
+	 --force-save[=true|false]    Save download with --save-session option even
+	                              if the download is completed or removed. This
+	                              option also saves control file in that
+	                              situations. This may be useful to save
+	                              BitTorrent seeding which is recognized as
+	                              completed state.
+	
+	                              可能的取值： true, false
+	                              默认： false
+	                              标记： #advanced
+	
+	 --disk-cache=SIZE            Enable disk cache. If SIZE is 0, the disk cache
+	                              is disabled. This feature caches the downloaded
+	                              data in memory, which grows to at most SIZE
+	                              bytes. The cache storage is created for aria2
+	                              instance and shared by all downloads. The one
+	                              advantage of the disk cache is reduce the disk
+	                              I/O because the data are written in larger unit
+	                              and it is reordered by the offset of the file.
+	                              If hash checking is involved and the data are
+	                              cached in memory, we don't need to read them
+	                              from the disk.
+	                              SIZE can include K or M(1K = 1024, 1M = 1024K).
+	
+	                              可能的取值： 0-*
+	                              默认： 16M
+	                              标记： #advanced
+	
+	 --gid=GID                    Set GID manually. aria2 identifies each
+	                              download by the ID called GID. The GID must be
+	                              hex string of 16 characters, thus [0-9a-zA-Z]
+	                              are allowed and leading zeros must not be
+	                              stripped. The GID all 0 is reserved and must
+	                              not be used. The GID must be unique, otherwise
+	                              error is reported and the download is not added.
+	                              This option is useful when restoring the
+	                              sessions saved using --save-session option. If
+	                              this option is not used, new GID is generated
+	                              by aria2.
+	
+	                              标记： #advanced
+	
+	 --save-session-interval=SEC  Save error/unfinished downloads to a file
+	                              specified by --save-session option every SEC
+	                              seconds. If 0 is given, file will be saved only
+	                              when aria2 exits.
+	
+	                              可能的取值： 0-*
+	                              默认： 0
+	                              标记： #advanced
+	
+	 --enable-color[=true|false]  Enable color output for a terminal.
+	
+	                              可能的取值： true, false
+	                              默认： true
+	                              标记： #advanced
+	
+	 --rpc-secret=TOKEN           Set RPC secret authorization token.
+	
+	                              标记： #rpc
+	
+	 --dscp=DSCP                  Set DSCP value in outgoing IP packets of
+	                              BitTorrent traffic for QoS. This parameter sets
+	                              only DSCP bits in TOS field of IP packets,
+	                              not the whole field. If you take values
+	                              from /usr/include/netinet/ip.h divide them by 4
+	                              (otherwise values would be incorrect, e.g. your
+	                              CS1 class would turn into CS4). If you take
+	                              commonly used values from RFC, network vendors'
+	                              documentation, Wikipedia or any other source,
+	                              use them as they are.
+	
+	                              可能的取值： 0-*
+	                              默认： 0
+	                              标记： #advanced
+	
+	 --pause-metadata[=true|false]
+	                              Pause downloads created as a result of metadata
+	                              download. There are 3 types of metadata
+	                              downloads in aria2: (1) downloading .torrent
+	                              file. (2) downloading torrent metadata using
+	                              magnet link. (3) downloading metalink file.
+	                              These metadata downloads will generate downloads
+	                              using their metadata. This option pauses these
+	                              subsequent downloads. This option is effective
+	                              only when --enable-rpc=true is given.
+	
+	                              可能的取值： true, false
+	                              默认： false
+	                              标记： #advanced, #rpc
+	
+	 --rlimit-nofile=NUM          Set the soft limit of open file descriptors.
+	                              This open will only have effect when:
+	                                a) The system supports it (posix)
+	                                b) The limit does not exceed the hard limit.
+	                                c) The specified limit is larger than the
+	                                   current soft limit.
+	                              This is equivalent to setting nofile via ulimit,
+	                              except that it will never decrease the limit.
+	
+	                              可能的取值： 1-*
+	                              默认： 1024
+	                              标记： #advanced
+	
 	 --ftp-user=USER 设置FTP用户。此设置对所有链接有效。
 	
 	                              标记： #basic, #ftp
@@ -377,6 +1122,25 @@ aria2c -s 2 http://host/image.iso http://mirror1/image.iso http://mirror2/image.
 	 --ftp-passwd=PASSWD 设置FTP密码。此设置对所有链接有效。
 	
 	                              标记： #basic, #ftp
+	
+	 --ftp-type=TYPE 设置FTP传输类型。
+	
+	                              可能的取值： binary, ascii
+	                              默认： binary
+	                              标记： #ftp
+	
+	 -p, --ftp-pasv[=true|false] 在FTP中使用被动模式。如果选择false，
+	                              将使用主动模式。
+	
+	                              可能的取值： true, false
+	                              默认： true
+	                              标记： #ftp
+	
+	 --ftp-reuse-connection[=true|false] 重新使用FTP中的链接。
+	
+	                              可能的取值： true, false
+	                              默认： true
+	                              标记： #ftp
 	
 	 --http-user=USER 设置HTTP用户。此设置对所有链接有效。
 	
@@ -386,26 +1150,205 @@ aria2c -s 2 http://host/image.iso http://mirror1/image.iso http://mirror2/image.
 	
 	                              标记： #basic, #http
 	
+	 -U, --user-agent=USER_AGENT 为http(s)下载设置用户代理。
+	
+	                              默认： aria2/1.18.10
+	                              标记： #http
+	
 	 --load-cookies=FILE 从FILE中载入Cookies，这些FILE通常使用Firefox3格式
 	                              和Mozilla/Firefox(1.x/2.x)/Netscape格式。
 	
 	                              可能的取值： /path/to/file
 	                              标记： #basic, #http, #cookie
 	
-	 -S, --show-files[=true|false] Print file listing of .torrent, .meta4 and
-	                              .metalink file and exit. More detailed
-	                              information will be listed in case of torrent
-	                              file.
+	 --save-cookies=FILE        以Mozilla/Firefox(1.x/2.x)/
+	                              Netscape的标准格式保存   Cookies 到
+	                             制定文件FILE. 如果FILE已存在，则会覆
+	                             盖. 会话的 Cookies 也会保存，
+	
+	                              可能的取值： /path/to/file
+	                              标记： #http, #cookie
+	
+	 --enable-http-keep-alive[=true|false] 启用HTTP/1.1持续连接。
+	
+	                              可能的取值： true, false
+	                              默认： true
+	                              标记： #http
+	
+	 --enable-http-pipelining[=true|false] 启用HTTP/1.1流水线。
+	
+	                              可能的取值： true, false
+	                              默认： false
+	                              标记： #http
+	
+	 --header=HEADER 附加HEADER到HTTP请求header。您可以
+	                              重复使用此选项来指定多个
+	                              header，比如：
+	                              aria2c --header="X-A: b78" --header="X-B: 9J1"
+	                              http://host/file
+	
+	                              标记： #http
+	
+	 --certificate=FILE           Use the client certificate in FILE.
+	                              The certificate must be in PEM format.
+	                              You may use --private-key option to specify the
+	                              private key.
+	
+	                              可能的取值： /path/to/file
+	                              标记： #http, #https
+	
+	 --private-key=FILE           Use the private key in FILE.
+	                              The private key must be decrypted and in PEM
+	                              format. See also --certificate option.
+	
+	                              可能的取值： /path/to/file
+	                              标记： #http, #https
+	
+	 --ca-certificate=FILE        Use the certificate authorities in FILE to verify
+	                              the peers. The certificate file must be in PEM
+	                              format and can contain multiple CA certificates.
+	                              Use --check-certificate option to enable
+	                              verification.
+	
+	                              可能的取值： /path/to/file
+	                              标记： #http, #https
+	
+	 --check-certificate[=true|false] Verify the peer using certificates specified
+	                              in --ca-certificate option.
+	
+	                              可能的取值： true, false
+	                              默认： true
+	                              标记： #http, #https
+	
+	 --use-head[=true|false]      Use HEAD method for the first request to the HTTP
+	                              server.
+	
+	                              可能的取值： true, false
+	                              默认： false
+	                              标记： #http
+	
+	 --http-auth-challenge[=true|false] Send HTTP authorization header only when it
+	                              is requested by the server. If false is set, then
+	                              authorization header is always sent to the server.
+	                              There is an exception: if username and password
+	                              are embedded in URI, authorization header is
+	                              always sent to the server regardless of this
+	                              option.
+	
+	                              可能的取值： true, false
+	                              默认： false
+	                              标记： #http
+	
+	 --http-no-cache[=true|false] Send Cache-Control: no-cache and Pragma: no-cache
+	                              header to avoid cached content.  If false is
+	                              given, these headers are not sent and you can add
+	                              Cache-Control header with a directive you like
+	                              using --header option.
+	
+	                              可能的取值： true, false
+	                              默认： false
+	                              标记： #http
+	
+	 --http-accept-gzip[=true|false] Send 'Accept: deflate, gzip' request header
+	                              and inflate response if remote server responds
+	                              with 'Content-Encoding: gzip' or
+	                              'Content-Encoding: deflate'.
+	
+	                              可能的取值： true, false
+	                              默认： false
+	                              标记： #http
+	
+	 --http-proxy=PROXY           Use a proxy server for HTTP. To override a
+	                              previously defined proxy, use "".
+	                              See also the --all-proxy option.
+	                              This affects all http downloads.
+	
+	                              可能的取值： [http://][USER:PASSWORD@]HOST[:PORT]
+	                              标记： #http
+	
+	 --https-proxy=PROXY          Use a proxy server for HTTPS. To override a 
+	                              previously defined proxy, use "".
+	                              See also the --all-proxy option.
+	                              This affects all https downloads.
+	
+	                              可能的取值： [http://][USER:PASSWORD@]HOST[:PORT]
+	                              标记： #http, #https
+	
+	 --ftp-proxy=PROXY            Use a proxy server for FTP. To override a 
+	                              previously defined proxy, use "".
+	                              See also the --all-proxy option.
+	                              This affects all ftp downloads.
+	
+	                              可能的取值： [http://][USER:PASSWORD@]HOST[:PORT]
+	                              标记： #ftp
+	
+	 --all-proxy=PROXY            Use a proxy server for all protocols. To override
+	                              a previously defined proxy, use "".
+	                              You also can override this setting and specify a
+	                              proxy server for a particular protocol using the
+	                              --http-proxy, --https-proxy and --ftp-proxy
+	                              options.
+	                              This affects all downloads.
+	
+	                              可能的取值： [http://][USER:PASSWORD@]HOST[:PORT]
+	                              标记： #http, #https, #ftp
+	
+	 --no-proxy=DOMAINS           Specify comma separated hostnames, domains or
+	                              network address with or without CIDR block where
+	                              proxy should not be used.
+	
+	                              可能的取值： HOSTNAME,DOMAIN,NETWORK/CIDR
+	                              标记： #http, #https, #ftp
+	
+	 --proxy-method=METHOD 设置使用在代理请求中的方法。
+	
+	                              可能的取值： get, tunnel
+	                              默认： get
+	                              标记： #http, #ftp
+	
+	 --http-proxy-user=USER       Set user for --http-proxy.
+	
+	                              标记： #http
+	
+	 --http-proxy-passwd=PASSWD   Set password for --http-proxy.
+	
+	                              标记： #http
+	
+	 --https-proxy-user=USER      Set user for --https-proxy.
+	
+	                              标记： #http, #https
+	
+	 --https-proxy-passwd=PASSWD  Set password for --https-proxy.
+	
+	                              标记： #http, #https
+	
+	 --ftp-proxy-user=USER        Set user for --ftp-proxy.
+	
+	                              标记： #ftp
+	
+	 --ftp-proxy-passwd=PASSWD    Set password for --ftp-proxy.
+	
+	                              标记： #ftp
+	
+	 --all-proxy-user=USER        Set user for --all-proxy.
+	
+	                              标记： #http, #https, #ftp
+	
+	 --all-proxy-passwd=PASSWD    Set password for --all-proxy.
+	
+	                              标记： #http, #https, #ftp
+	
+	 -S, --show-files[=true|false] 显示 .torrent, .meta4 和
+	                              .metalink 等类型文件的列表然后退出.
+	                              如果是torrent文件，会给出更详细信息。
 	
 	                              可能的取值： true, false
 	                              默认： false
 	                              标记： #basic, #metalink, #bittorrent
 	
-	 --max-overall-upload-limit=SPEED Set max overall upload speed in bytes/sec.
-	                              0 means unrestricted.
-	                              You can append K or M(1K = 1024, 1M = 1024K).
-	                              To limit the upload speed per torrent, use
-	                              --max-upload-limit option.
+	 --max-overall-upload-limit=SPEED 设置全局最大上传速度为SPEED bytes/sec.
+	                              0 意味着不限制.使用 K 或 M (1K = 1024, 1M = 1024K)也是可
+	                             以的.你也可以使用--max-upload-limit可以为单个torrent文件限速。
 	
 	                              可能的取值： 0-*
 	                              默认： 0
@@ -436,6 +1379,66 @@ aria2c -s 2 http://host/image.iso http://mirror1/image.iso http://mirror2/image.
 	                              默认： 6881-6999
 	                              标记： #basic, #bittorrent
 	
+	 --follow-torrent=true|false|mem If true or mem is specified, when a file
+	                              whose suffix is .torrent or content type is
+	                              application/x-bittorrent is downloaded, aria2
+	                              parses it as a torrent file and downloads files
+	                              mentioned in it.
+	                              If mem is specified, a torrent file is not
+	                              written to the disk, but is just kept in memory.
+	                              If false is specified, the .torrent file is
+	                              downloaded to the disk, but is not parsed as a
+	                              torrent and its contents are not downloaded.
+	
+	                              可能的取值： true, mem, false
+	                              默认： true
+	                              标记： #bittorrent
+	
+	 --select-file=INDEX... 指定文件的索引来设定下载文件。
+	                              使用--show-files选项，您可以查
+	                              找文件索引。使用','可以指定多
+	                              个索引，例如："3,6"。您也可以
+	                              使用'-'来指定一个范围："1-5"。
+	                              ','和'-'可以一起使用。当使用-M
+	                              选项时，索引可以由查询改变
+	                              (参阅--metalink-*选项)。
+	
+	                              可能的取值： 1-65535
+	                              标记： #metalink, #bittorrent
+	
+	 --seed-time=MINUTES 指定做种时间（以分钟计）。也可以
+	                              参阅--seed-ratio选项。
+	
+	                              可能的取值： 0-*
+	                              标记： #bittorrent
+	
+	 --seed-ratio=RATIO 指定共享比率种子完成torrents，直到共
+	                              享比率达到RATIO。支持您
+	                              在此指定等于或大于1.0。如
+	                              果您愿意不在意共享比率而
+	                              做种子，则指定0.0。如果与
+	                              此选项同时，指定--seed-time
+	                              选项，在链接中至少有一个被
+	                              满足时，做种结束。
+	
+	                              可能的取值： 0.0-*
+	                              默认： 1.0
+	                              标记： #bittorrent
+	
+	 --peer-id-prefix=PEER_ID_PREFIX 使用peer ID前缀. BitTorrent的peer ID
+	                               长度为20字节. 如果制定长度大于20字节，则只会使用前20
+	                               字节的内容，如果给定的长度小于20自己，则使用随机值填
+	                               充至20字节
+	
+	                              默认： A2-1-18-10-
+	                              标记： #bittorrent
+	
+	 --enable-peer-exchange[=true|false] 启用Peer交换扩展。
+	
+	                              可能的取值： true, false
+	                              默认： true
+	                              标记： #bittorrent
+	
 	 --enable-dht[=true|false]    Enable IPv4 DHT functionality. It also enables
 	                              UDP tracker support. If a private flag is set
 	                              in a torrent, aria2 doesn't use DHT for that
@@ -455,6 +1458,18 @@ aria2c -s 2 http://host/image.iso http://mirror1/image.iso http://mirror2/image.
 	                              默认： 6881-6999
 	                              标记： #basic, #bittorrent
 	
+	 --dht-entry-point=HOST:PORT  Set host and port as an entry point to IPv4 DHT
+	                              network.
+	
+	                              可能的取值： HOST:PORT
+	                              标记： #bittorrent
+	
+	 --dht-file-path=PATH         Change the IPv4 DHT routing table file to PATH.
+	
+	                              可能的取值： /path/to/file
+	                              默认： /root/.aria2/dht.dat
+	                              标记： #bittorrent
+	
 	 --enable-dht6[=true|false]   Enable IPv6 DHT functionality.
 	                              Use --dht-listen-port option to specify port
 	                              number to listen on. See also --dht-listen-addr6
@@ -470,37 +1485,268 @@ aria2c -s 2 http://host/image.iso http://mirror1/image.iso http://mirror2/image.
 	
 	                              标记： #basic, #bittorrent
 	
-	 -M, --metalink-file=METALINK_FILE The file path to the .meta4 and .metalink
-	                              file. Reads input from stdin when '-' is
-	                              specified.
+	 --dht-entry-point6=HOST:PORT Set host and port as an entry point to IPv6 DHT
+	                              network.
 	
-	                              可能的取值： /path/to/file, -
-	                              标记： #basic, #metalink
+	                              可能的取值： HOST:PORT
+	                              标记： #bittorrent
 	
-	URI, MAGNET, TORRENT_FILE, METALINK_FILE:
-	 You can specify multiple HTTP(S)/FTP URIs. Unless you specify -Z option, all
-	 URIs must point to the same file or downloading will fail.
-	 You can also specify arbitrary number of BitTorrent Magnet URIs, torrent/
-	 metalink files stored in a local drive. Please note that they are always
-	 treated as a separate download.
+	 --dht-file-path6=PATH        Change the IPv6 DHT routing table file to PATH.
 	
-	 You can specify both torrent file with -T option and URIs. By doing this,
-	 download a file from both torrent swarm and HTTP/FTP server at the same time,
-	 while the data from HTTP/FTP are uploaded to the torrent swarm. For single file
-	 torrents, URI can be a complete URI pointing to the resource or if URI ends
-	 with '/', 'name' in torrent file is added. For multi-file torrents, 'name' and
-	 'path' in torrent are added to form a URI for each file.
+	                              可能的取值： /path/to/file
+	                              默认： /root/.aria2/dht6.dat
+	                              标记： #bittorrent
 	
-	 Make sure that URI is quoted with single(') or double(") quotation if it
-	 contains "&" or any characters that have special meaning in shell.
+	 --bt-min-crypto-level=plain|arc4 设置加密方法的最小级别。
+	                              如果某个peer提供几个加密方法，
+	                              aria2会选择满足给定级别中最低
+	                              的一个。
 	
-	About the number of connections
-	 Since 1.10.0 release, aria2 uses 1 connection per host by default and has 20MiB
-	 segment size restriction. So whatever value you specify using -s option, it
-	 uses 1 connection per host. To make it behave like 1.9.x, use
-	 --max-connection-per-server=4 --min-split-size=1M.
+	                              可能的取值： plain, arc4
+	                              默认： plain
+	                              标记： #bittorrent
+	
+	 --bt-require-crypto[=true|false] If true is given, aria2 doesn't accept and
+	                              establish connection with legacy BitTorrent
+	                              handshake. Thus aria2 always uses Obfuscation
+	                              handshake.
+	
+	                              可能的取值： true, false
+	                              默认： false
+	                              标记： #bittorrent
+	
+	 --bt-request-peer-speed-limit=SPEED 如果每个torrent的总下载速
+	                              度低于SPEED，aria2会临时提高peer
+	                              数目来尝试更大的下载速度。使用
+	                              您喜欢的下载速度来配置此选项，
+	                              在某些时候能够提高下载速度。
+	                              
+	                              您可以附加K或M（1K=1024，1M=1024K）。
+	
+	                              可能的取值： 0-*
+	                              默认： 50K
+	                              标记： #bittorrent
+	
+	 --bt-max-open-files=NUM      Specify maximum number of files to open in
+	                              multi-file BitTorrent/Metalink downloads
+	                              globally.
+	
+	                              可能的取值： 1-*
+	                              默认： 100
+	                              标记： #bittorrent
+	
+	 --bt-seed-unverified[=true|false] 不验证片段的哈希值，直接以上
+	                              一个下载文件做种子。
+	
+	                              可能的取值： true, false
+	                              默认： false
+	                              标记： #bittorrent
+	
+	 --bt-hash-check-seed[=true|false] 如果选择true，在使用--check-integrityer
+	                              选项进行哈希检查后，且文件完整时，
+	                              继续提供文件种子。如果您仅仅想检查并下
+	                              载文件，当文件被损坏或不完整时，
+	                              请设置此选项为false。
+	                              此设置仅对BT下载有效。
+	
+	                              可能的取值： true, false
+	                              默认： true
+	                              标记： #bittorrent, #checksum
+	
+	 --bt-max-peers=NUM 指定每个torrent的peer的最大数目。
+	                              0意味着不限制。
+	                              也可以参阅--bt-request-peer-speed-limit选项。
+	
+	                              可能的取值： 0-*
+	                              默认： 55
+	                              标记： #bittorrent
+	
+	 --bt-external-ip=IPADDRESS   Specify the external IP address to report to a
+	                              BitTorrent tracker. Although this function is
+	                              named 'external', it can accept any kind of IP
+	                              addresses.
+	
+	                              可能的取值： a numeric IP address
+	                              标记： #bittorrent
+	
+	 -O, --index-out=INDEX=PATH   Set file path for file with index=INDEX. You can
+	                              find the file index using the --show-files option.
+	                              PATH is a relative path to the path specified in
+	                              --dir option. You can use this option multiple
+	                              times.
+	
+	                              可能的取值： INDEX=PATH
+	                              标记： #bittorrent
+	
+	 --bt-tracker-interval=SEC    Set the interval in seconds between tracker
+	                              requests. This completely overrides interval value
+	                              and aria2 just uses this value and ignores the
+	                              min interval and interval value in the response of
+	                              tracker. If 0 is set, aria2 determines interval
+	                              based on the response of tracker and the download
+	                              progress.
+	
+	                              可能的取值： 0-*
+	                              默认： 0
+	                              标记： #bittorrent
+	
+	 --bt-stop-timeout=SEC        Stop BitTorrent download if download speed is 0 in
+	                              consecutive SEC seconds. If 0 is given, this
+	                              feature is disabled.
+	
+	                              可能的取值： 0-*
+	                              默认： 0
+	                              标记： #bittorrent
+	
+	 --bt-prioritize-piece=head[=SIZE],tail[=SIZE] Try to download first and last
+	                              pieces of each file first. This is useful for
+	                              previewing files. The argument can contain 2
+	                              keywords:head and tail. To include both keywords,
+	                              they must be separated by comma. These keywords
+	                              can take one parameter, SIZE. For example, if
+	                              head=SIZE is specified, pieces in the range of
+	                              first SIZE bytes of each file get higher priority.
+	                              tail=SIZE means the range of last SIZE bytes of
+	                              each file. SIZE can include K or M(1K = 1024, 1M =
+	                              1024K). If SIZE is omitted, SIZE=1M is used.
+	
+	                              可能的取值： head[=SIZE], tail[=SIZE]
+	                              标记： #bittorrent
+	
+	 --bt-save-metadata[=true|false] Save metadata as .torrent file. This option has
+	                              effect only when BitTorrent Magnet URI is used.
+	                              The filename is hex encoded info hash with suffix
+	                              .torrent. The directory to be saved is the same
+	                              directory where download file is saved. If the
+	                              same file already exists, metadata is not saved.
+	                              See also --bt-metadata-only option.
+	
+	                              可能的取值： true, false
+	                              默认： false
+	                              标记： #bittorrent
+	
+	 --bt-metadata-only[=true|false] Download metadata only. The file(s) described
+	                              in metadata will not be downloaded. This option
+	                              has effect only when BitTorrent Magnet URI is
+	                              used. See also --bt-save-metadata option.
+	
+	                              可能的取值： true, false
+	                              默认： false
+	                              标记： #bittorrent
+	
+	 --bt-enable-lpd[=true|false] Enable Local Peer Discovery.
+	
+	                              可能的取值： true, false
+	                              默认： false
+	                              标记： #bittorrent
+	
+	 --bt-lpd-interface=INTERFACE Use given interface for Local Peer Discovery. If
+	                              this option is not specified, the default
+	                              interface is chosen. You can specify interface
+	                              name and IP address.
+	
+	                              可能的取值： interface, IP address
+	                              标记： #bittorrent
+	
+	 --bt-tracker-timeout=SEC     Set timeout in seconds.
+	
+	                              可能的取值： 1-600
+	                              默认： 60
+	                              标记： #bittorrent
+	
+	 --bt-tracker-connect-timeout=SEC Set the connect timeout in seconds to
+	                              establish connection to tracker. After the
+	                              connection is established, this option makes no
+	                              effect and --bt-tracker-timeout option is used
+	                              instead.
+	
+	                              可能的取值： 1-600
+	                              默认： 60
+	                              标记： #bittorrent
+	
+	 --dht-message-timeout=SEC    Set timeout in seconds.
+	
+	                              可能的取值： 1-60
+	                              默认： 10
+	                              标记： #bittorrent
+	
+	 --on-bt-download-complete=COMMAND For BitTorrent, a command specified in
+	                              --on-download-complete is called after download
+	                              completed and seeding is over. On the other hand,
+	                              this option sets the command to be executed after
+	                              download completed but before seeding.
+	                              See --on-download-start option for the
+	                              requirement of COMMAND.
+	
+	                              可能的取值： /path/to/command
+	                              标记： #advanced, #hook
+	
+	 --bt-tracker=URI[,...]       Comma separated list of additional BitTorrent
+	                              tracker's announce URI. These URIs are not
+	                              affected by --bt-exclude-tracker option because
+	                              they are added after URIs in --bt-exclude-tracker
+	                              option are removed.
+	
+	                              可能的取值： URI,...
+	                              标记： #bittorrent
+	
+	 --bt-exclude-tracker=URI[,...] Comma separated list of BitTorrent tracker's
+	                              announce URI to remove. You can use special value
+	                              '*' which matches all URIs, thus removes all
+	                              announce URIs. When specifying '*' in shell
+	                              command-line, don't forget to escape or quote it.
+	                              See also --bt-tracker option.
+	
+	                              可能的取值： URI,... or *
+	                              标记： #bittorrent
+	
+	 --bt-remove-unselected-file[=true|false] Removes the unselected files when
+	                              download is completed in BitTorrent. To
+	                              select files, use --select-file option. If
+	                              it is not used, all files are assumed to be
+	                              selected. Please use this option with care
+	                              because it will actually remove files from
+	                              your disk.
+	
+	                              可能的取值： true, false
+	                              默认： false
+	                              标记： #bittorrent
+	
+	 --bt-detach-seed-only[=true|false]
+	                              Exclude seed only downloads when counting
+	                              concurrent active downloads (See -j option).
+	                              This means that if -j3 is given and this option
+	                              is turned on and 3 downloads are active and one
+	                              of those enters seed mode, then it is excluded
+	                              from active download count (thus it becomes 2),
+	                              and the next download waiting in queue gets
+	                              started. But be aware that seeding item is still
+	                              recognized as active download in RPC method.
+	
+	                              可能的取值： true, false
+	                              默认： false
+	                              标记： #bittorrent
+	
+	 --bt-force-encryption[=true|false]
+	                              Requires BitTorrent message payload encryption
+	                              with arc4. This is a shorthand of
+	                              --bt-require-crypto --bt-min-crypto-level=arc4.
+	                              If true is given, deny legacy BitTorrent
+	                              handshake and only use Obfuscation handshake and
+	                              always encrypt message payload.
+	
+	                              可能的取值： true, false
+	                              默认： false
+	                              标记： #bittorrent
+	
+	 --metalink-location=LOCATION[,...] 首选服务器的位置。
+	                              可以使用以英文逗号分隔
+	                              位置的列表。
+	
+	                              标记： #metalink
 	
 	Refer to man page for more information.
+	[root@localhost ~]#
 
 
 ## 参考资料
