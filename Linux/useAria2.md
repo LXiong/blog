@@ -197,10 +197,10 @@ aria2c -o b.rar http://example.com/a.rar
 
 > 下载https的文件
 
-推荐加：`–check-certificate=false` 不检查ssl证书。
+推荐加：`–-check-certificate=false` 不检查ssl证书。
 
 ```shell
-aria2c -s 10 –check-certificate=false https://www.google.com/a.zip
+aria2c -s 10 –-check-certificate=false https://www.google.com/a.zip
 ```
 
 > 开多个连接去下载
