@@ -30,9 +30,9 @@ HDFS 中提供了对文件操作的各种命令。
 
 	hdfs dfs -appendToFile localfile /user/hadoop/hadoopfile
 	hdfs dfs -appendToFile localfile1 localfile2 /user/hadoop/hadoopfile
-	hdfs dfs -appendToFile localfile hdfs://nn.示例.com/hadoop/hadoopfile
+	hdfs dfs -appendToFile localfile hdfs://nn.example.com/hadoop/hadoopfile
 	# Reads the input from stdin.
-	hdfs dfs -appendToFile - hdfs://nn.示例.com/hadoop/hadoopfile 
+	hdfs dfs -appendToFile - hdfs://nn.example.com/hadoop/hadoopfile 
 
 返回值:
 
@@ -48,7 +48,7 @@ HDFS 中提供了对文件操作的各种命令。
 
 示例:
 
-	hdfs dfs -cat hdfs://nn1.示例.com/file1 hdfs://nn2.示例.com/file2
+	hdfs dfs -cat hdfs://nn1.example.com/file1 hdfs://nn2.example.com/file2
 	hdfs dfs -cat file:///file3 /user/hadoop/file4
 
 返回值:
@@ -131,8 +131,8 @@ The output columns with `-count -q` are: `QUOTA`, `REMAINING_QUATA`, `SPACE_QUOT
 
 示例:
 
-	hdfs dfs -count hdfs://nn1.示例.com/file1 hdfs://nn2.示例.com/file2
-	hdfs dfs -count -q hdfs://nn1.示例.com/file1
+	hdfs dfs -count hdfs://nn1.example.com/file1 hdfs://nn2.example.com/file2
+	hdfs dfs -count -q hdfs://nn1.example.com/file1
 
 返回值:
 
@@ -176,7 +176,7 @@ Displays sizes of files and directories contained in the given directory or the 
 
 示例:
 
-	hdfs dfs -du /user/hadoop/dir1 /user/hadoop/file1 hdfs://nn.示例.com/user/hadoop/dir1
+	hdfs dfs -du /user/hadoop/dir1 /user/hadoop/file1 hdfs://nn.example.com/user/hadoop/dir1
 
 返回值: 
 
@@ -211,7 +211,7 @@ Copy files to the local file system. Files that fail the CRC check may be copied
 示例:
 
 	hdfs dfs -get /user/hadoop/file localfile
-	hdfs dfs -get hdfs://nn.示例.com/user/hadoop/file localfile
+	hdfs dfs -get hdfs://nn.example.com/user/hadoop/file localfile
 
 返回值:
 
@@ -319,7 +319,7 @@ ls命令的递归版本。
 示例:
 
 	hdfs dfs -mkdir /user/hadoop/dir1 /user/hadoop/dir2
-	hdfs dfs -mkdir hdfs://nn1.示例.com/user/hadoop/dir hdfs://nn2.示例.com/user/hadoop/dir
+	hdfs dfs -mkdir hdfs://nn1.example.com/user/hadoop/dir hdfs://nn2.example.com/user/hadoop/dir
 
 返回值:
 
@@ -352,7 +352,7 @@ Displays a "Not implemented yet" message.
 示例:
 
 	hdfs dfs -mv /user/hadoop/file1 /user/hadoop/file2
-	hdfs dfs -mv hdfs://nn.示例.com/file1 hdfs://nn.示例.com/file2 hdfs://nn.示例.com/file3 hdfs://nn.示例.com/dir1
+	hdfs dfs -mv hdfs://nn.example.com/file1 hdfs://nn.example.com/file2 hdfs://nn.example.com/file3 hdfs://nn.example.com/dir1
 
 返回值:
 
@@ -370,9 +370,9 @@ Displays a "Not implemented yet" message.
 
 	hdfs dfs -put localfile /user/hadoop/hadoopfile
 	hdfs dfs -put localfile1 localfile2 /user/hadoop/hadoopdir
-	hdfs dfs -put localfile hdfs://nn.示例.com/hadoop/hadoopfile
+	hdfs dfs -put localfile hdfs://nn.example.com/hadoop/hadoopfile
 	# Reads the input from stdin.
-	hdfs dfs -put - hdfs://nn.示例.com/hadoop/hadoopfile 
+	hdfs dfs -put - hdfs://nn.example.com/hadoop/hadoopfile 
 
 返回值:
 
@@ -397,7 +397,7 @@ Displays a "Not implemented yet" message.
 
 示例:
 
-	hdfs dfs -rm hdfs://nn.示例.com/file /user/hadoop/emptydir
+	hdfs dfs -rm hdfs://nn.example.com/file /user/hadoop/emptydir
 
 返回值:
 
