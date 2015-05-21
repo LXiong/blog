@@ -129,7 +129,11 @@ case 语句匹配一个值或一个模式，如果匹配成功，执行相匹配
 
 ## for 循环
 
-for循环一般格式为：
+for 循环有两种。
+
+### for ... in 循环
+
+一般格式为：
 
 	for 变量 in 列表
 	do
@@ -194,6 +198,27 @@ for循环一般格式为：
 	/home/panda/.bash_logout
 	/home/panda/.bash_profile
 	/home/panda/.bashrc
+
+### for (()) 循环
+
+直接看例子吧：
+
+	for ((i=0; i<10; i++)); do
+		echo $i
+	done
+
+运行结果：
+
+	0
+	1
+	2
+	3
+	4
+	5
+	6
+	7
+	8
+	9
 
 ## while 循环
 
